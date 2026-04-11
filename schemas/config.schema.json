@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EvidocConfig",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "source_dir": { "type": "string" },
+    "output_dir": { "type": "string" },
+    "format": { "type": "string", "enum": ["pdf", "docx"] },
+    "mode": { "type": "string", "enum": ["single", "run"] },
+    "application": { "type": ["string", "null"] },
+    "requirement": { "type": ["string", "null"] }
+  }
+}

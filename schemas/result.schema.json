@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EvidocResult",
+  "type": "object",
+  "required": ["schema_version", "run_id", "test_id", "generated_at", "test_case", "steps", "artifacts"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string" },
+    "run_id": { "type": "string" },
+    "test_id": { "type": "string" },
+    "generated_at": { "type": "string" },
+    "test_case": {
+      "type": "object",
+      "required": ["name", "status", "duration"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "status": { "type": "string", "enum": ["PASS", "FAIL", "WARN", "INFO", "SKIP"] },
+        "duration": { "type": "number" },
+        "application": { "type": ["string", "null"] },
+        "requirement": { "type": ["string", "null"] }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title", "status", "logs", "artifact_ids"],
+        "additionalProperties": false,
+        "properties": {
+          "title": { "type": "string" },
+          "status": { "type": "string", "enum": ["PASS", "FAIL", "WARN", "INFO", "SKIP"] },
+          "logs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["level", "message", "timestamp"],
+              "additionalProperties": false,
+              "properties": {
+                "level": { "type": "string", "enum": ["PASS", "FAIL", "WARN", "INFO", "SKIP"] },
+                "message": { "type": "string" },
+                "timestamp": { "type": "string" }
+              }
+            }
+          },
+          "artifact_ids": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "path"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string", "enum": ["image", "file", "log"] },
+          "path": { "type": "string" },
+          "title": { "type": ["string", "null"] },
+          "description": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}
