@@ -4,12 +4,15 @@ from pathlib import Path
 
 import typer
 
+from evidoc.documentation import available_documents, open_documentation
 from evidoc.domain.generate_mode import GenerateMode
 from evidoc.domain.report_format import ReportFormat
 from evidoc.infrastructure.bootstrap import build_generate_use_case
 from evidoc.interfaces.tui.app import EvidocTui
 
 app = typer.Typer(help="Evidoc reporting CLI.")
+docs_app = typer.Typer(help="Open bundled Evidoc documentation.")
+app.add_typer(docs_app, name="docs")
 
 
 @app.command()
@@ -59,6 +62,25 @@ def generate(
 @app.command()
 def tui() -> None:
     EvidocTui().run()
+
+
+@docs_app.command("robot-library")
+def docs_robot_library() -> None:
+    """Open the bundled Robot Framework keyword reference generated with libdoc."""
+
+    document_path = open_documentation("robot-library")
+    typer.echo(f"Opened bundled documentation: {document_path}")
+
+
+@docs_app.callback(invoke_without_command=True)
+def docs_callback(ctx: typer.Context) -> None:
+    """Print a short usage hint when `evidoc docs` is called without a subcommand."""
+
+    if ctx.invoked_subcommand is not None:
+        return
+    typer.echo("Select a documentation target.")
+    typer.echo(f"Available targets: {', '.join(available_documents())}")
+    raise typer.Exit(code=0)
 
 
 if __name__ == "__main__":

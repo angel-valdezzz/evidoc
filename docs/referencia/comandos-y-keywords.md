@@ -5,7 +5,10 @@
 ```bash
 poetry run evidoc generate [--source_dir PATH] [--output_dir PATH] [--mode run|single] [--format pdf|docx]
 poetry run evidoc tui
+poetry run evidoc docs robot-library
 ```
+
+`evidoc docs robot-library` abre la referencia HTML de la libreria `evidoc.robot` generada con `libdoc` y empaquetada dentro de la distribucion instalada.
 
 ## Python API
 
@@ -34,3 +37,5 @@ Registrar Evidencia Minima
     Attach Artifact    ${CURDIR}${/}archivo.txt    Archivo de soporte
     Capture Screenshot    driver=${driver}    title=Pantalla final
 ```
+
+La referencia completa de argumentos, descripcion funcional y notas de uso para cada keyword se consulta desde el HTML abierto con `evidoc docs robot-library`.

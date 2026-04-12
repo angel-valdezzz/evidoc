@@ -1,5 +1,13 @@
 from __future__ import annotations
 
+"""Robot Framework listener that manages the Evidoc test lifecycle.
+
+Use it with ``robot --listener evidoc.listener`` so every Robot test case opens
+an Evidoc context at start and persists its evidence when execution finishes.
+The listener is intentionally defensive: failures in evidence capture are
+logged as warnings and should not break the Robot run by themselves.
+"""
+
 import logging
 from contextvars import ContextVar
 from time import perf_counter
@@ -12,6 +20,8 @@ ROBOT_LISTENER_API_VERSION = 3
 
 
 class Listener:
+    """Listener API v3 implementation used by Robot Framework."""
+
     def __init__(self) -> None:
         self._test_started_at: ContextVar[float | None] = ContextVar(
             "EVIDOC_LISTENER_TEST_STARTED_AT",

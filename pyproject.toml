@@ -5,6 +5,9 @@ description = "Business-friendly test evidence reporting engine for PDF and DOCX
 authors = ["OpenAI Codex <codex@openai.com>"]
 readme = "README.md"
 packages = [{ include = "evidoc" }]
+include = [
+    { path = "evidoc/resources/docs/robot-library.html", format = ["sdist", "wheel"] },
+]
 
 [tool.poetry.dependencies]
 python = "^3.11"
