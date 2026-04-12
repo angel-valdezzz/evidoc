@@ -2,10 +2,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from evidoc.application.services import ExecutionService, GenerateReportUseCase, LoadConfigUseCase
-from evidoc.domain.enums import ReportFormat
+from evidoc.application.execution_service import ExecutionService
+from evidoc.application.generate_report_use_case import GenerateReportUseCase
+from evidoc.application.load_config_use_case import LoadConfigUseCase
+from evidoc.domain.report_format import ReportFormat
 from evidoc.infrastructure.config.repository import SchemaValidatedConfigRepository
-from evidoc.infrastructure.filesystem.repository import FilesystemArtifactStorage, FilesystemResultRepository
+from evidoc.infrastructure.filesystem.filesystem_artifact_storage import FilesystemArtifactStorage
+from evidoc.infrastructure.filesystem.filesystem_result_repository import FilesystemResultRepository
 from evidoc.infrastructure.logging import LoggerWarningSink
 from evidoc.infrastructure.reporting.docx_renderer import DocxReportRenderer
 from evidoc.infrastructure.reporting.pdf_renderer import PdfReportRenderer

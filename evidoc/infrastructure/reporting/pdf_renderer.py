@@ -11,28 +11,30 @@ from reportlab.lib.units import inch
 from reportlab.lib.utils import ImageReader
 from reportlab.platypus import HRFlowable, Image, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-from evidoc.application.ports import ReportRenderer
-from evidoc.domain.enums import ArtifactType, Status
-from evidoc.domain.models import ArtifactRef, TestResult
+from evidoc.application.report_renderer import ReportRenderer
+from evidoc.domain.artifact import Artifact
+from evidoc.domain.artifact_type import ArtifactType
+from evidoc.domain.run import Run
+from evidoc.domain.status import Status
 from evidoc.infrastructure.reporting.helpers import status_color
 
 
 class PdfReportRenderer(ReportRenderer):
     format_name = "pdf"
 
-    def render_single(self, source_dir: Path, output_dir: Path, result: TestResult) -> Path:
+    def render_single(self, source_dir: Path, output_dir: Path, result: Run) -> Path:
         output = output_dir / f"{self._safe_name(result.test_case.name)}-{result.test_id}.pdf"
         self._build(output, source_dir, [result])
         return output
 
-    def render_run(self, source_dir: Path, output_dir: Path, results: list[TestResult]) -> Path:
+    def render_run(self, source_dir: Path, output_dir: Path, results: list[Run]) -> Path:
         run_ids = {result.run_id for result in results}
         run_id = results[0].run_id if len(run_ids) == 1 and results else "combined"
         output = output_dir / f"run-{run_id}.pdf"
         self._build(output, source_dir, results)
         return output
 
-    def _build(self, output_path: Path, source_dir: Path, results: list[TestResult]) -> None:
+    def _build(self, output_path: Path, source_dir: Path, results: list[Run]) -> None:
         styles = self._styles()
         doc = SimpleDocTemplate(
             str(output_path),
@@ -88,7 +90,7 @@ class PdfReportRenderer(ReportRenderer):
         )
         return styles
 
-    def _test_section(self, result: TestResult, styles: dict[str, ParagraphStyle], source_dir: Path) -> list:
+    def _test_section(self, result: Run, styles: dict[str, ParagraphStyle], source_dir: Path) -> list:
         items: list = [
             Paragraph(result.test_case.name, styles["Heading1"]),
             Spacer(1, 0.04 * inch),
@@ -104,7 +106,7 @@ class PdfReportRenderer(ReportRenderer):
         items.append(Spacer(1, 0.04 * inch))
 
         artifact_map = {artifact.id: artifact for artifact in result.artifacts}
-        image_refs: list[tuple[str, ArtifactRef]] = []
+        image_refs: list[tuple[str, Artifact]] = []
 
         for step_index, step in enumerate(result.steps, start=1):
             items.extend(self._step_block(step_index, step.title, step.status.value, styles))
@@ -144,7 +146,7 @@ class PdfReportRenderer(ReportRenderer):
 
         return items
 
-    def _metadata_rows(self, result: TestResult) -> list[tuple[str, str]]:
+    def _metadata_rows(self, result: Run) -> list[tuple[str, str]]:
         rows = [
             ("Test ID", result.test_id),
             ("Run ID", result.run_id),
@@ -181,7 +183,7 @@ class PdfReportRenderer(ReportRenderer):
         self,
         result: TestResult,
         step_title: str,
-        artifact: ArtifactRef,
+        artifact: Artifact,
         source_dir: Path,
         styles: dict[str, ParagraphStyle],
     ) -> list:

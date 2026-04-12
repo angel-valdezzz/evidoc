@@ -8,8 +8,13 @@ from typing import Any
 
 from jsonschema import Draft202012Validator
 
-from evidoc.domain.enums import ArtifactType, Status
-from evidoc.domain.models import Artifact, LogEntry, Run, Step, TestCase
+from evidoc.domain.artifact import Artifact
+from evidoc.domain.artifact_type import ArtifactType
+from evidoc.domain.log_entry import LogEntry
+from evidoc.domain.run import Run
+from evidoc.domain.status import Status
+from evidoc.domain.step import Step
+from evidoc.domain.test_case import TestCase
 
 
 def _project_root() -> Path:

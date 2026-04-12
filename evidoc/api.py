@@ -5,12 +5,14 @@ from contextvars import ContextVar
 from pathlib import Path
 from typing import Any
 
-from evidoc.application.ports import WarningSink
-from evidoc.application.services import InMemoryWarningSink
+from evidoc.application.in_memory_warning_sink import InMemoryWarningSink
+from evidoc.application.warning_sink import WarningSink
 from evidoc.domain import run_from_dict
-from evidoc.domain.enums import ArtifactType, Status
+from evidoc.domain.artifact_type import ArtifactType
+from evidoc.domain.status import Status
 from evidoc.infrastructure.bootstrap import project_root
-from evidoc.infrastructure.filesystem.repository import FilesystemArtifactStorage, FilesystemResultRepository
+from evidoc.infrastructure.filesystem.filesystem_artifact_storage import FilesystemArtifactStorage
+from evidoc.infrastructure.filesystem.filesystem_result_repository import FilesystemResultRepository
 
 LOGGER = logging.getLogger("evidoc.api")
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from contextvars import ContextVar
 
-from evidoc.application.services import ExecutionService
+from evidoc.application.execution_service import ExecutionService
 
 CURRENT_RUNTIME: ContextVar[ExecutionService | None] = ContextVar("CURRENT_RUNTIME", default=None)
 

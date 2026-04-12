@@ -4,7 +4,8 @@ from pathlib import Path
 
 import typer
 
-from evidoc.domain.enums import GenerateMode, ReportFormat
+from evidoc.domain.generate_mode import GenerateMode
+from evidoc.domain.report_format import ReportFormat
 from evidoc.infrastructure.bootstrap import build_generate_use_case
 from evidoc.interfaces.tui.app import EvidocTui
 
