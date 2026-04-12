@@ -10,6 +10,10 @@ La TUI es util cuando alguien necesita generar reportes sin memorizar comandos, 
 poetry run evidoc tui
 ```
 
+## Compatibilidad visual
+
+La interfaz usa bordes ASCII en sus paneles y controles principales para mantener una presentacion consistente en el CMD basico de Windows.
+
 ## Estructura visible
 
 | Seccion | Descripcion |

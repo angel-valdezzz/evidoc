@@ -44,7 +44,7 @@ class EvidocTui(App[None]):
         width: 1fr;
         height: auto;
         padding: 1 2;
-        border: round $primary;
+        border: ascii $primary;
     }
 
     #form_panel {
@@ -74,8 +74,13 @@ class EvidocTui(App[None]):
         margin-top: 1;
     }
 
-    Select, Input {
+    Select, Input, Button {
         width: 1fr;
+        border: ascii $surface;
+    }
+
+    Select:focus, Input:focus, Button:focus {
+        border: ascii $primary;
     }
 
     #generate {
@@ -86,7 +91,7 @@ class EvidocTui(App[None]):
     #status {
         margin-top: 1;
         padding: 1;
-        border: round $surface-lighten-1;
+        border: ascii $surface-lighten-1;
     }
     """
 
@@ -96,7 +101,7 @@ class EvidocTui(App[None]):
             with Vertical(id="hero"):
                 yield Static("Evidence operations console", id="hero_title")
                 yield Static(
-                    "Configure the input folders and output format before generating the final evidence package.",
+                    "Configure the input folders and output format before generating the final evidence package. ASCII layout mode keeps the interface stable in basic Windows CMD.",
                     id="hero_copy",
                 )
             with Horizontal(id="workspace"):
