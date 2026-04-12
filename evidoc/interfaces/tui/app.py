@@ -4,9 +4,9 @@ from pathlib import Path
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Container, Horizontal, Vertical, VerticalScroll
+from textual.containers import Container, Vertical, VerticalScroll
 from textual.events import Resize
-from textual.widgets import Button, Footer, Header, Input, Label, Select, Static, TabPane, TabbedContent
+from textual.widgets import Button, ContentSwitcher, Footer, Header, Input, Label, Select, Static, Tab, Tabs
 
 from evidoc.infrastructure.bootstrap import build_generate_use_case
 
@@ -47,20 +47,27 @@ class EvidocTui(App[None]):
     }
 
     #main_tabs {
+        height: auto;
+        margin-bottom: 1;
+    }
+
+    #main_content {
         height: 1fr;
     }
 
-    TabPane {
+    #main_content > .tab-screen {
         padding: 0;
     }
 
     #welcome_scroll,
     #operation_scroll {
         height: 1fr;
+        width: 1fr;
     }
 
     #workspace_body {
         layout: horizontal;
+        width: 1fr;
         height: auto;
     }
 
@@ -80,7 +87,7 @@ class EvidocTui(App[None]):
         margin-right: 1;
     }
 
-    #workspace_body.-narrow #form_panel {
+    #form_panel.-stack {
         margin-right: 0;
         margin-bottom: 1;
     }
@@ -104,16 +111,20 @@ class EvidocTui(App[None]):
 
     .path_row {
         layout: horizontal;
-        height: auto;
+        width: 1fr;
+        height: 3;
+        align: left middle;
     }
 
     .path_row.-stack {
         layout: vertical;
+        height: auto;
     }
 
     .path_input {
         width: 1fr;
         margin-right: 1;
+        height: 3;
     }
 
     .path_row.-stack .path_input {
@@ -124,6 +135,7 @@ class EvidocTui(App[None]):
     .browse_button {
         width: 16;
         min-width: 16;
+        height: 3;
     }
 
     .hint {
@@ -135,6 +147,7 @@ class EvidocTui(App[None]):
     Input,
     Button {
         width: 1fr;
+        height: 3;
         border: ascii $surface;
     }
 
@@ -179,12 +192,17 @@ class EvidocTui(App[None]):
                     "Configure the input folders and output format before generating the final evidence package. ASCII layout mode keeps the interface stable in basic Windows CMD.",
                     id="hero_copy",
                 )
-            with TabbedContent(initial="welcome", id="main_tabs"):
-                with TabPane("Bienvenida", id="welcome"):
-                    with VerticalScroll(id="welcome_scroll"):
-                        with Vertical(classes="panel", id="welcome_panel"):
-                            yield Static(
-                                r"""
+            yield Tabs(
+                Tab("Bienvenida", id="tab-welcome"),
+                Tab("Operacion", id="tab-operation"),
+                id="main_tabs",
+                active="tab-welcome",
+            )
+            with ContentSwitcher(initial="welcome", id="main_content"):
+                with VerticalScroll(id="welcome", classes="tab-screen welcome-screen"):
+                    with Vertical(classes="panel", id="welcome_panel"):
+                        yield Static(
+                            r"""
   ________   ___      ___   ________   ________   ________
  |\   ____\ |\  \    /  /| |\   ___  \|\   ___  \|\   ____\
  \ \  \___| \ \  \  /  / / \ \  \\ \  \ \  \\ \  \ \  \___|
@@ -192,72 +210,72 @@ class EvidocTui(App[None]):
    \ \  \____ \ \    / /     \ \  \\ \  \ \  \\ \  \ \  \____
     \ \_______\\ \__/ /       \ \__\\ \__\ \__\\ \__\ \_______\
      \|_______| \|__|/         \|__| \|__|\|__| \|__|\|_______|
-                                """.strip("\n"),
-                                id="ascii_art",
+                            """.strip("\n"),
+                            id="ascii_art",
+                        )
+                        yield Static(
+                            "Welcome to Evidoc. This console helps operators turn execution artifacts into stakeholder-ready evidence reports.",
+                            id="welcome_copy",
+                        )
+                        yield Static("Quick start", classes="section_title")
+                        yield Static("1. Press F2 to open Operacion.")
+                        yield Static("2. Use Ctrl+S and Ctrl+O to pick the source and output folders.")
+                        yield Static("3. Adjust format and mode according to the reporting target.")
+                        yield Static("4. Press Ctrl+G or activate Generate report to run the process.")
+                with VerticalScroll(id="operation", classes="tab-screen operation-screen"):
+                    with Container(id="workspace_body"):
+                        with Vertical(classes="panel", id="form_panel"):
+                            yield Static("Report setup", classes="section_title")
+                            with Vertical(classes="field"):
+                                yield Label("Source directory")
+                                with Container(classes="path_row", id="source_path_row"):
+                                    yield Input(
+                                        value="./results",
+                                        id="source_dir",
+                                        placeholder="Example: ./results",
+                                        classes="path_input",
+                                    )
+                                    yield Button("Browse", id="browse_source", classes="browse_button")
+                            with Vertical(classes="field"):
+                                yield Label("Output directory")
+                                with Container(classes="path_row", id="output_path_row"):
+                                    yield Input(
+                                        value="./reports",
+                                        id="output_dir",
+                                        placeholder="Example: ./reports",
+                                        classes="path_input",
+                                    )
+                                    yield Button("Browse", id="browse_output", classes="browse_button")
+                            with Vertical(classes="field"):
+                                yield Label("Output format")
+                                yield Select([("PDF report", "pdf"), ("DOCX report", "docx")], value="pdf", id="format")
+                            with Vertical(classes="field"):
+                                yield Label("Execution mode")
+                                yield Select(
+                                    [("Complete run", "run"), ("Single result", "single")],
+                                    value="run",
+                                    id="mode",
+                                )
+                            yield Static(
+                                "Shortcuts: F1 welcome, F2 operation, Ctrl+S source folder, Ctrl+O output folder, Ctrl+G generate.",
+                                classes="hint",
                             )
                             yield Static(
-                                "Welcome to Evidoc. This console helps operators turn execution artifacts into stakeholder-ready evidence reports.",
-                                id="welcome_copy",
+                                "Use complete run for batch execution or single result when you only need one evidence set.",
+                                classes="hint",
                             )
-                            yield Static("Quick start", classes="section_title")
-                            yield Static("1. Press F2 to open Operacion.")
-                            yield Static("2. Use Ctrl+S and Ctrl+O to pick the source and output folders.")
-                            yield Static("3. Adjust format and mode according to the reporting target.")
-                            yield Static("4. Press Ctrl+G or activate Generate report to run the process.")
-                with TabPane("Operacion", id="operation"):
-                    with VerticalScroll(id="operation_scroll"):
-                        with Container(id="workspace_body"):
-                            with Vertical(classes="panel", id="form_panel"):
-                                yield Static("Report setup", classes="section_title")
-                                with Vertical(classes="field"):
-                                    yield Label("Source directory")
-                                    with Container(classes="path_row", id="source_path_row"):
-                                        yield Input(
-                                            value="./results",
-                                            id="source_dir",
-                                            placeholder="Example: ./results",
-                                            classes="path_input",
-                                        )
-                                        yield Button("Browse", id="browse_source", classes="browse_button")
-                                with Vertical(classes="field"):
-                                    yield Label("Output directory")
-                                    with Container(classes="path_row", id="output_path_row"):
-                                        yield Input(
-                                            value="./reports",
-                                            id="output_dir",
-                                            placeholder="Example: ./reports",
-                                            classes="path_input",
-                                        )
-                                        yield Button("Browse", id="browse_output", classes="browse_button")
-                                with Vertical(classes="field"):
-                                    yield Label("Output format")
-                                    yield Select([("PDF report", "pdf"), ("DOCX report", "docx")], value="pdf", id="format")
-                                with Vertical(classes="field"):
-                                    yield Label("Execution mode")
-                                    yield Select(
-                                        [("Complete run", "run"), ("Single result", "single")],
-                                        value="run",
-                                        id="mode",
-                                    )
-                                yield Static(
-                                    "Shortcuts: F1 welcome, F2 operation, Ctrl+S source folder, Ctrl+O output folder, Ctrl+G generate.",
-                                    classes="hint",
-                                )
-                                yield Static(
-                                    "Use complete run for batch execution or single result when you only need one evidence set.",
-                                    classes="hint",
-                                )
-                                yield Button("Generate report", id="generate", variant="primary")
-                            with Vertical(classes="panel", id="summary_panel"):
-                                yield Static("Operator checklist", classes="section_title")
-                                yield Static("1. Confirm the source folder contains execution artifacts.")
-                                yield Static("2. Choose the target folder where the report should be written.")
-                                yield Static("3. Select the format required by the stakeholder.")
-                                yield Static("4. Run generation and verify the resulting path notification.")
-                                yield Static("Ready to generate with the current configuration.", id="status")
+                            yield Button("Generate report", id="generate", variant="primary")
+                        with Vertical(classes="panel", id="summary_panel"):
+                            yield Static("Operator checklist", classes="section_title")
+                            yield Static("1. Confirm the source folder contains execution artifacts.")
+                            yield Static("2. Choose the target folder where the report should be written.")
+                            yield Static("3. Select the format required by the stakeholder.")
+                            yield Static("4. Run generation and verify the resulting path notification.")
+                            yield Static("Ready to generate with the current configuration.", id="status")
         yield Footer()
 
     def on_mount(self) -> None:
+        self._set_active_tab("welcome")
         self._sync_layout()
 
     def on_resize(self, event: Resize) -> None:
@@ -266,13 +284,16 @@ class EvidocTui(App[None]):
     def _sync_layout(self) -> None:
         if not self.is_mounted:
             return
-        narrow = self.size.width < 120
+        narrow = self.size.width < 150
         self.query_one("#workspace_body").set_class(narrow, "-narrow")
         self.query_one("#source_path_row").set_class(narrow, "-stack")
         self.query_one("#output_path_row").set_class(narrow, "-stack")
+        self.query_one("#form_panel").set_class(narrow, "-stack")
 
     def _set_active_tab(self, tab_id: str) -> None:
-        self.query_one("#main_tabs", TabbedContent).active = tab_id
+        tab_widget_id = "tab-welcome" if tab_id == "welcome" else "tab-operation"
+        self.query_one("#main_tabs", Tabs).active = tab_widget_id
+        self.query_one("#main_content", ContentSwitcher).current = tab_id
 
     def _pick_directory(self, title: str) -> str | None:
         try:
@@ -344,3 +365,7 @@ class EvidocTui(App[None]):
             return
         if event.button.id == "generate":
             self._run_generation()
+
+    def on_tabs_tab_activated(self, event: Tabs.TabActivated) -> None:
+        content_id = "welcome" if event.tab.id == "tab-welcome" else "operation"
+        self.query_one("#main_content", ContentSwitcher).current = content_id

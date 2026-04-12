@@ -40,7 +40,7 @@ Los campos de origen y destino siguen aceptando texto manual, pero ahora tambien
 
 ## Responsive
 
-Cuando el ancho disponible baja, la TUI apila el formulario y el panel de resumen para evitar cortes de informacion.
+La aplicacion abre siempre en `Bienvenida`. Cuando el ancho disponible baja, la TUI apila el formulario y el panel de resumen para evitar cortes de informacion y mantener visibles los campos principales.
 
 ## Flujo recomendado
 
