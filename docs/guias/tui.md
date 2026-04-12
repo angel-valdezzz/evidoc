@@ -18,18 +18,22 @@ La interfaz usa bordes ASCII en sus paneles y controles principales para mantene
 
 | Seccion | Descripcion |
 | --- | --- |
+| `Bienvenida` | Pestania inicial con arte ASCII de `evidoc` y una guia corta de uso |
+| `Generacion` | Pestania operativa donde se configura y ejecuta la generacion |
 | `Report setup` | Formulario principal con origen, destino, formato y modo |
 | `Operator checklist` | Resumen de pasos para reducir errores de operacion |
 | `status` | Estado actual y resultado de la ultima generacion |
 
 ## Flujo recomendado
 
-1. Define `source_dir`.
-2. Define `output_dir`.
-3. Elige formato.
-4. Elige modo.
-5. Revisa el panel lateral para confirmar la operacion.
-6. Presiona `Generate report`.
+1. Revisa la pestania `Bienvenida`.
+2. Cambia a la pestania `Generacion`.
+3. Define `source_dir`.
+4. Define `output_dir`.
+5. Elige formato.
+6. Elige modo.
+7. Revisa el panel lateral para confirmar la operacion.
+8. Presiona `Generate report`.
 
 ## Que esperar
 
