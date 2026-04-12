@@ -98,6 +98,7 @@ nav:
       - panorama/index.md
       - Que Es Evidoc: panorama/que-es-evidoc.md
       - Modelo Operativo: panorama/modelo-operativo.md
+      - Arquitectura Tecnica: panorama/arquitectura-tecnica.md
       - Perfiles De Uso: panorama/perfiles-de-uso.md
   - Primeros Pasos:
       - primeros-pasos/index.md

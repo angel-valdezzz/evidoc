@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 820" role="img" aria-labelledby="title desc">
+  <title id="title">Arquitectura general de Evidoc</title>
+  <desc id="desc">Diagrama por capas con interfaces, application, domain e infrastructure y sus relaciones principales.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ecfeff"/>
+      <stop offset="100%" stop-color="#fffbeb"/>
+    </linearGradient>
+    <style>
+      text { font-family: IBM Plex Sans, Arial, sans-serif; }
+      .title { font-size: 32px; font-weight: 700; fill: #062925; }
+      .layer { fill: rgba(255,255,255,0.82); stroke: #0f766e; stroke-width: 3; }
+      .layer-title { font-size: 24px; font-weight: 700; fill: #115e59; }
+      .box { fill: #ffffff; stroke: #0f766e; stroke-width: 2.5; rx: 18; }
+      .box-text { font-size: 18px; fill: #062925; text-anchor: middle; }
+      .arrow { stroke: #0f766e; stroke-width: 4; fill: none; stroke-linecap: round; }
+      .dashed { stroke-dasharray: 10 8; }
+      .note { fill: #fef3c7; stroke: #d97706; stroke-width: 2; }
+      .note-text { font-size: 17px; fill: #6b4f00; text-anchor: middle; }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0f766e"/>
+    </marker>
+  </defs>
+  <rect width="1280" height="820" rx="30" fill="url(#bg)"/>
+  <text x="640" y="56" text-anchor="middle" class="title">Evidoc - Arquitectura general</text>
+
+  <rect x="40" y="96" width="1200" height="120" rx="24" class="layer"/>
+  <text x="86" y="132" class="layer-title">Interfaces</text>
+  <rect x="80" y="148" width="180" height="46" class="box"/>
+  <text x="170" y="177" class="box-text">CLI</text>
+  <rect x="290" y="148" width="180" height="46" class="box"/>
+  <text x="380" y="177" class="box-text">TUI</text>
+  <rect x="500" y="148" width="180" height="46" class="box"/>
+  <text x="590" y="177" class="box-text">Python API</text>
+  <rect x="710" y="148" width="200" height="46" class="box"/>
+  <text x="810" y="177" class="box-text">Robot Listener</text>
+  <rect x="940" y="148" width="220" height="46" class="box"/>
+  <text x="1050" y="177" class="box-text">Robot Library</text>
+
+  <rect x="40" y="252" width="1200" height="170" rx="24" class="layer"/>
+  <text x="86" y="288" class="layer-title">Application</text>
+  <rect x="120" y="316" width="250" height="58" class="box"/>
+  <text x="245" y="351" class="box-text">ExecutionService</text>
+  <rect x="425" y="316" width="280" height="58" class="box"/>
+  <text x="565" y="351" class="box-text">LoadConfigUseCase</text>
+  <rect x="760" y="316" width="320" height="58" class="box"/>
+  <text x="920" y="351" class="box-text">GenerateReportUseCase</text>
+  <rect x="315" y="386" width="650" height="22" class="box"/>
+  <text x="640" y="403" class="box-text">Ports: ResultRepository, ArtifactStorage, ReportRenderer, WarningSink, ConfigRepository</text>
+
+  <rect x="40" y="458" width="1200" height="110" rx="24" class="layer"/>
+  <text x="86" y="494" class="layer-title">Domain</text>
+  <rect x="225" y="507" width="830" height="38" class="box"/>
+  <text x="640" y="532" class="box-text">Run, TestCase, Step, Artifact, Status, ReportFormat, GenerateMode y value objects</text>
+
+  <rect x="40" y="604" width="1200" height="150" rx="24" class="layer"/>
+  <text x="86" y="640" class="layer-title">Infrastructure</text>
+  <rect x="90" y="665" width="190" height="54" class="box"/>
+  <text x="185" y="698" class="box-text">Bootstrap</text>
+  <rect x="320" y="665" width="240" height="54" class="box"/>
+  <text x="440" y="698" class="box-text">Filesystem adapters</text>
+  <rect x="600" y="665" width="240" height="54" class="box"/>
+  <text x="720" y="698" class="box-text">Reporting PDF / DOCX</text>
+  <rect x="880" y="665" width="170" height="54" class="box"/>
+  <text x="965" y="698" class="box-text">Config repo</text>
+  <rect x="1080" y="665" width="120" height="54" class="box"/>
+  <text x="1140" y="698" class="box-text">Logger</text>
+
+  <path d="M170 194 L170 316" class="arrow" marker-end="url(#arrow)"/>
+  <path d="M380 194 L380 316" class="arrow" marker-end="url(#arrow)"/>
+  <path d="M590 194 L440 314" class="arrow" marker-end="url(#arrow)"/>
+  <path d="M810 194 L590 194 L590 316" class="arrow" marker-end="url(#arrow)"/>
+  <path d="M1050 194 L640 194 L640 316" class="arrow" marker-end="url(#arrow)"/>
+
+  <path d="M185 665 L185 374" class="arrow" marker-end="url(#arrow)"/>
+  <path d="M440 665 L440 408" class="arrow dashed" marker-end="url(#arrow)"/>
+  <path d="M720 665 L720 408" class="arrow dashed" marker-end="url(#arrow)"/>
+  <path d="M965 665 L965 408" class="arrow dashed" marker-end="url(#arrow)"/>
+  <path d="M1140 665 L1140 408 L965 408" class="arrow dashed" marker-end="url(#arrow)"/>
+
+  <path d="M245 374 L245 507" class="arrow" marker-end="url(#arrow)"/>
+  <path d="M565 374 L565 507" class="arrow" marker-end="url(#arrow)"/>
+  <path d="M920 374 L920 507" class="arrow" marker-end="url(#arrow)"/>
+
+  <rect x="410" y="744" width="460" height="46" rx="16" class="note"/>
+  <text x="640" y="772" class="note-text">Application depende de puertos; Infrastructure provee las implementaciones concretas.</text>
+</svg>
