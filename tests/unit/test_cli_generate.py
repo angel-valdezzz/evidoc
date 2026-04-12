@@ -238,3 +238,27 @@ def test_generate_report_use_case_supports_docx_output(tmp_path: Path) -> None:
 
     assert docx_outputs[0].exists()
     assert docx_outputs[0].suffix == ".docx"
+
+
+def test_cli_docs_without_subcommand_lists_available_targets() -> None:
+    result = RUNNER.invoke(app, ["docs"])
+
+    assert result.exit_code == 0
+    assert "Available targets: robot-library" in result.stdout
+
+
+def test_cli_docs_robot_library_opens_bundled_reference(monkeypatch, tmp_path: Path) -> None:
+    document_path = tmp_path / "robot-library.html"
+    document_path.write_text("<html></html>", encoding="utf-8")
+    opened: list[str] = []
+
+    monkeypatch.setattr(
+        "evidoc.interfaces.cli.main.open_documentation",
+        lambda name: opened.append(name) or document_path,
+    )
+
+    result = RUNNER.invoke(app, ["docs", "robot-library"])
+
+    assert result.exit_code == 0, result.stdout
+    assert opened == ["robot-library"]
+    assert str(document_path) in result.stdout

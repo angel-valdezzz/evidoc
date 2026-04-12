@@ -7,6 +7,16 @@ Evidoc expone dos puntos de integracion para Robot Framework:
 - `evidoc.listener` para abrir y cerrar automaticamente el contexto por prueba.
 - `evidoc.robot` como libreria de keywords.
 
+## Referencia oficial de keywords
+
+La referencia mas precisa para las keywords no vive escrita a mano: se genera con `Robot Framework libdoc` a partir de los docstrings tecnicos de `evidoc.robot`.
+
+```bash
+poetry run evidoc docs robot-library
+```
+
+Ese comando abre el HTML empaquetado con el wheel instalado localmente.
+
 ## Configuracion minima
 
 ```bash

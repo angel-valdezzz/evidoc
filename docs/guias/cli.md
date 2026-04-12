@@ -19,6 +19,19 @@ poetry run evidoc generate --source_dir .\results --output_dir .\reports --mode 
 | `--mode` | No | `run` o `single` |
 | `--format` | No | `pdf` o `docx` |
 
+## Documentacion integrada
+
+Evidoc distribuye una referencia local de keywords de Robot Framework generada con `libdoc`.
+
+```bash
+poetry run evidoc docs robot-library
+```
+
+## Resultado esperado
+
+- El comando abre el archivo HTML empaquetado dentro de la instalacion local de Evidoc.
+- Ese mismo archivo viaja dentro del wheel, por lo que tambien funciona despues de `pip install evidoc-...whl`.
+
 ## Ejemplos practicos
 
 === "Un PDF consolidado"
@@ -43,6 +56,7 @@ poetry run evidoc generate --source_dir .\results --output_dir .\reports --mode 
 
 - Si no encuentra resultados, imprime `No results found.`
 - Si genera salidas, imprime la ruta de cada archivo creado.
+- Si abres `docs robot-library`, imprime la ruta del HTML abierto para facilitar soporte y troubleshooting.
 - Los argumentos pasados tienen prioridad sobre `evidoc.json` o `evidoc.toml`.
 
 ??? info "Buena practica operativa"
