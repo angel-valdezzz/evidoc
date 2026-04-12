@@ -16,21 +16,26 @@ from evidoc.infrastructure.bootstrap import build_generate_use_case
 
 
 WELCOME_ART = r"""
- _______  _     _  _____  ______   _______  _______
- |______  |     |   |    |     \  |       | |
- |______  \_____/ __|__  |_____/  |_____  |_|_____
+ _______ _    _ _____ ______   ____   _____
+|  ____| |  | |_   _|  __  \ / __ \ / ____|
+| |__  | |  | | | | | |  | | |  | | |
+|  __| | |  | | | | | |  | | |  | | |
+| |____| |__| |_| |_| |__| | |__| | |____
+|______|\____/|_____|_____/ \____/ \_____|
 """
 
 
 class EvidocTui(App[None]):
     TITLE = "Evidoc"
     SUB_TITLE = "Evidence report generator"
+    ENABLE_COMMAND_PALETTE = False
     selected_format = reactive("pdf")
     selected_mode = reactive("run")
 
     BINDINGS = [
         Binding("f1", "show_welcome", "Bienvenida"),
         Binding("f2", "show_operation", "Operacion"),
+        Binding("ctrl+p", "noop", "", show=False, priority=True),
         Binding("ctrl+g", "generate_report", "Generar", show=False),
         Binding("ctrl+s", "browse_source", "Buscar origen", show=False),
         Binding("ctrl+o", "browse_output", "Buscar destino", show=False),
@@ -467,6 +472,9 @@ class EvidocTui(App[None]):
 
     def action_generate_report(self) -> None:
         self._run_generation()
+
+    def action_noop(self) -> None:
+        return None
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "format_pdf":
