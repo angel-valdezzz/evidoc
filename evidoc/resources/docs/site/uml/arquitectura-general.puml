@@ -1,0 +1,79 @@
+@startuml
+title Evidoc - Arquitectura general
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam defaultTextAlignment center
+skinparam ArrowColor #0F766E
+skinparam package {
+  BorderColor #0F766E
+  FontColor #062925
+}
+skinparam component {
+  BorderColor #0F766E
+  FontColor #062925
+}
+skinparam rectangle {
+  BorderColor #0F766E
+  FontColor #062925
+}
+
+package "Interfaces" as interfaces {
+  component "CLI\ninterfaces.cli.main" as cli
+  component "TUI\ninterfaces.tui.app" as tui
+  component "Python API\nevidoc.api" as pyapi
+  component "Robot Listener\nevidoc.listener" as listener
+  component "Robot Library\nevidoc.robot" as robotlib
+}
+
+package "Application" as application {
+  component "ExecutionService" as execution_service
+  component "GenerateReportUseCase" as generate_uc
+  component "LoadConfigUseCase" as load_config_uc
+  interface "Ports\n(ResultRepository,\nArtifactStorage,\nReportRenderer,\nWarningSink,\nConfigRepository)" as ports
+}
+
+package "Domain" as domain {
+  component "Run / TestCase / Step /\nArtifact / Value Objects" as domain_model
+}
+
+package "Infrastructure" as infrastructure {
+  component "Bootstrap\ninfrastructure.bootstrap" as bootstrap
+  component "Filesystem adapters" as filesystem
+  component "Reporting adapters\nPDF / DOCX" as reporting
+  component "Config repository" as config
+  component "Robot context helpers" as robotctx
+  component "Logger warning sink" as logging
+}
+
+cli --> bootstrap
+tui --> bootstrap
+pyapi --> filesystem
+pyapi --> domain_model
+listener --> pyapi
+robotlib --> pyapi
+
+bootstrap --> execution_service
+bootstrap --> load_config_uc
+bootstrap --> generate_uc
+
+execution_service --> ports
+generate_uc --> ports
+load_config_uc --> ports
+execution_service --> domain_model
+generate_uc --> domain_model
+load_config_uc --> domain_model
+
+filesystem ..|> ports
+reporting ..|> ports
+config ..|> ports
+logging ..|> ports
+robotctx --> pyapi
+
+note bottom of application
+Application orchestration depends on abstractions.
+Infrastructure provides concrete adapters.
+end note
+
+@enduml

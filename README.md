@@ -14,8 +14,11 @@ Build the technical end-user manual locally:
 
 ```bash
 poetry install --with docs
-poetry run mkdocs serve
+poetry run mkdocs build
+poetry run evidoc docs manual
 ```
+
+`evidoc docs manual` opens the offline MkDocs site bundled in the installed package. The static site is stored under `evidoc/resources/docs/site` so it can be shipped inside the built wheel.
 
 ## Tests
 

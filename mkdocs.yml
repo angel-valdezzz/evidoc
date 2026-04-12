@@ -1,8 +1,6 @@
 site_name: Evidoc Docs
 site_description: Manual tecnico para usuarios finales de Evidoc.
-site_url: https://evidoc.local/docs
-repo_name: evidoc
-repo_url: https://evidoc.local/repo
+use_directory_urls: false
 
 theme:
   name: material
@@ -26,8 +24,6 @@ theme:
     text: IBM Plex Sans
     code: IBM Plex Mono
   features:
-    - navigation.instant
-    - navigation.instant.prefetch
     - navigation.sections
     - navigation.tabs
     - navigation.top
@@ -80,13 +76,13 @@ markdown_extensions:
 extra:
   social:
     - icon: material/file-document-multiple-outline
-      link: guias/cli/
+      link: guias/cli.html
       name: CLI
     - icon: material/robot-outline
-      link: guias/robot-framework/
+      link: guias/robot-framework.html
       name: Robot Framework
     - icon: material/application-brackets-outline
-      link: guias/python-api/
+      link: guias/python-api.html
       name: Python API
 
 extra_css:

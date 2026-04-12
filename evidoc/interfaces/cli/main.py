@@ -72,6 +72,14 @@ def docs_robot_library() -> None:
     typer.echo(f"Opened bundled documentation: {document_path}")
 
 
+@docs_app.command("manual")
+def docs_manual() -> None:
+    """Open the offline MkDocs manual bundled inside the installed wheel."""
+
+    document_path = open_documentation("manual")
+    typer.echo(f"Opened bundled documentation: {document_path}")
+
+
 @docs_app.callback(invoke_without_command=True)
 def docs_callback(ctx: typer.Context) -> None:
     """Print a short usage hint when `evidoc docs` is called without a subcommand."""

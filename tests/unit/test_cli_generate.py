@@ -244,7 +244,25 @@ def test_cli_docs_without_subcommand_lists_available_targets() -> None:
     result = RUNNER.invoke(app, ["docs"])
 
     assert result.exit_code == 0
-    assert "Available targets: robot-library" in result.stdout
+    assert "Available targets: manual, robot-library" in result.stdout
+
+
+def test_cli_docs_manual_opens_bundled_mkdocs_site(monkeypatch, tmp_path: Path) -> None:
+    document_path = tmp_path / "site" / "index.html"
+    document_path.parent.mkdir(parents=True, exist_ok=True)
+    document_path.write_text("<html></html>", encoding="utf-8")
+    opened: list[str] = []
+
+    monkeypatch.setattr(
+        "evidoc.interfaces.cli.main.open_documentation",
+        lambda name: opened.append(name) or document_path,
+    )
+
+    result = RUNNER.invoke(app, ["docs", "manual"])
+
+    assert result.exit_code == 0, result.stdout
+    assert opened == ["manual"]
+    assert str(document_path) in result.stdout
 
 
 def test_cli_docs_robot_library_opens_bundled_reference(monkeypatch, tmp_path: Path) -> None:
