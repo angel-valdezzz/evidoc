@@ -48,6 +48,22 @@ class EvidocTui(App[None]):
         color: $text;
     }
 
+    #topbar {
+        dock: top;
+        height: 1;
+        padding: 0 2;
+        background: $surface-lighten-1;
+        color: $text-muted;
+    }
+
+    #bottombar {
+        dock: bottom;
+        height: 1;
+        padding: 0 2;
+        background: $panel-darken-1;
+        color: $text;
+    }
+
     TabbedContent {
         width: 1fr;
         dock: top;
@@ -306,6 +322,10 @@ class EvidocTui(App[None]):
 
     def compose(self) -> ComposeResult:
         yield Header()
+        yield Static(
+            "Navigate with F1/F2. Use Ctrl+S and Ctrl+O to pick folders. Press Ctrl+G to generate.",
+            id="topbar",
+        )
         with TabbedContent(initial="welcome", id="tabs"):
             with TabPane("Bienvenida", id="welcome"):
                 with ScrollableContainer():
@@ -317,10 +337,10 @@ class EvidocTui(App[None]):
                         )
                         with Container(classes="panel", id="welcome-actions"):
                             yield Static("Quick start", classes="panel-title")
-                            yield Static("1. Press F2 to open Operacion.")
-                            yield Static("2. Use Ctrl+S and Ctrl+O to pick the source and output folders.")
-                            yield Static("3. Adjust format and mode according to the reporting target.")
-                            yield Static("4. Press Ctrl+G or activate Generate report to run the process.")
+                            yield Static("1. Open the Operacion tab when you are ready to configure a report.")
+                            yield Static("2. Pick the source and output folders.")
+                            yield Static("3. Choose the report format and execution mode.")
+                            yield Static("4. Generate the report and confirm the resulting output.")
                         with Container(classes="panel", id="welcome-notes"):
                             yield Static("Design notes", classes="panel-title")
                             yield Static("The TUI opens in Bienvenida by default.")
@@ -350,10 +370,6 @@ class EvidocTui(App[None]):
                                     yield Button("Complete run", id="mode_run", classes="choice-button")
                                     yield Button("Single result", id="mode_single", classes="choice-button last")
                             yield Static(
-                                "Shortcuts: F1 bienvenida, F2 operacion, Ctrl+S source folder, Ctrl+O output folder, Ctrl+G generate.",
-                                classes="hint",
-                            )
-                            yield Static(
                                 "Use complete run for batch execution or single result when you only need one evidence set.",
                                 classes="hint",
                             )
@@ -366,6 +382,7 @@ class EvidocTui(App[None]):
                             yield Static("3. Select the format required by the stakeholder.")
                             yield Static("4. Run generation and verify the resulting path notification.")
                             yield Static("Ready to generate with the current configuration.", id="status")
+        yield Static("F1 Bienvenida   F2 Operacion   Ctrl+S Buscar origen   Ctrl+O Buscar destino   Ctrl+G Generar", id="bottombar")
     def on_mount(self) -> None:
         self.action_show_welcome()
         self._refresh_choices()
