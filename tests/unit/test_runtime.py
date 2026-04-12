@@ -46,7 +46,8 @@ def test_unique_test_ids_and_json_contract(tmp_path: Path) -> None:
     second = runtime.start_test("Second")
     runtime.finish_test(Status.FAIL, duration=0.3)
     assert first != second
-    result_path = next((tmp_path / "results").glob("run-*/test-*/result.json"))
+    run_id = (tmp_path / "results" / ".run_id").read_text(encoding="utf-8").strip()
+    result_path = tmp_path / "results" / f"run-{run_id}" / f"test-{first}" / "result.json"
     payload = json.loads(result_path.read_text(encoding="utf-8"))
     schema = json.loads((project_root() / "schemas" / "result.schema.json").read_text(encoding="utf-8"))
     validate(payload, schema)

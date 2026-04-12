@@ -42,8 +42,8 @@ poetry run pytest --cov=evidoc
 ## Generate reports
 
 ```bash
-poetry run evidoc generate --format pdf --mode run
-poetry run evidoc generate --format docx --mode single
+poetry run evidoc generate --source_dir ./results --output_dir ./reports --mode run
+poetry run evidoc generate --source_dir ./results --output_dir ./reports --mode single
 ```
 
 ## Robot Framework
