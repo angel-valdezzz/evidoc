@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 from jsonschema import validate
 
 from evidoc.application.services import ExecutionService, GenerateReportUseCase, InMemoryWarningSink, LoadConfigUseCase
@@ -13,6 +14,8 @@ from evidoc.infrastructure.filesystem.repository import FilesystemArtifactStorag
 from evidoc.infrastructure.reporting.docx_renderer import DocxReportRenderer
 from evidoc.infrastructure.reporting.pdf_renderer import PdfReportRenderer
 from evidoc.listener import Listener
+
+pytestmark = pytest.mark.unit
 
 
 def build_runtime(tmp_path: Path) -> tuple[ExecutionService, InMemoryWarningSink]:

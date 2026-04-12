@@ -15,8 +15,12 @@ python-docx = "^1.1.2"
 jsonschema = "^4.23.0"
 robotframework = "^7.0.0"
 
-[tool.poetry.group.dev.dependencies]
+[tool.poetry.group.test.dependencies]
 pytest = "^8.3.0"
+pytest-cov = "^6.1.1"
+
+[tool.poetry.group.acceptance.dependencies]
+pytest-bdd = "^8.1.0"
 
 [tool.poetry.scripts]
 evidoc = "evidoc.interfaces.cli.main:app"
@@ -26,4 +30,12 @@ requires = ["poetry-core>=1.9.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests/unit", "tests/acceptance"]
+markers = [
+    "unit: fast isolated unit and component-level tests",
+    "acceptance: end-to-end acceptance scenarios expressed in Gherkin",
+]
+addopts = [
+    "--strict-markers",
+]
+bdd_features_base_dir = "tests/acceptance/features"

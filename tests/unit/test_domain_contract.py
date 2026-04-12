@@ -9,9 +9,11 @@ from evidoc.domain import SCHEMA_VERSION, run_from_dict, validate_run_payload
 from evidoc.domain.enums import ArtifactType, Status
 from evidoc.domain.models import Artifact, LogEntry, Run, Step, TestCase
 
+pytestmark = pytest.mark.unit
+
 
 def load_example_payload() -> dict:
-    example_path = Path(__file__).resolve().parents[1] / "examples" / "run-result.example.json"
+    example_path = Path(__file__).resolve().parents[2] / "examples" / "run-result.example.json"
     return json.loads(example_path.read_text(encoding="utf-8"))
 
 

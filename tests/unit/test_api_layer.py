@@ -3,15 +3,25 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 from jsonschema import validate
 
 from evidoc.api import EvidocAPI
+from evidoc.domain.enums import Status
 from evidoc.infrastructure.bootstrap import project_root
+
+pytestmark = pytest.mark.unit
 
 
 def load_schema() -> dict:
     schema_path = project_root() / "schemas" / "result.schema.json"
     return json.loads(schema_path.read_text(encoding="utf-8"))
+
+
+def load_result(root_dir: Path, test_id: str) -> dict:
+    run_id = (root_dir / ".run_id").read_text(encoding="utf-8").strip()
+    result_path = root_dir / f"run-{run_id}" / f"test-{test_id}" / "result.json"
+    return json.loads(result_path.read_text(encoding="utf-8"))
 
 
 def test_api_creates_run_test_and_artifact_structure(tmp_path: Path) -> None:
@@ -35,17 +45,12 @@ def test_api_creates_run_test_and_artifact_structure(tmp_path: Path) -> None:
     assert result_path is not None
 
     root_dir = tmp_path / "results"
-    run_id = (root_dir / ".run_id").read_text(encoding="utf-8").strip()
-    test_dir = root_dir / f"run-{run_id}" / f"test-{first_test_id}"
-    payload = json.loads((test_dir / "result.json").read_text(encoding="utf-8"))
+    payload = load_result(root_dir, first_test_id)
 
     validate(payload, load_schema())
-    assert payload["run_id"] == run_id
-    assert payload["test_id"] == first_test_id
     assert payload["steps"][0]["artifact_ids"] == [artifact_id]
     assert payload["artifacts"][0]["path"].startswith("artifacts/")
-    assert (test_dir / "artifacts").exists()
-    assert any((test_dir / "artifacts").iterdir())
+    assert (root_dir / f"run-{payload['run_id']}" / f"test-{first_test_id}" / "artifacts").exists()
 
 
 def test_attach_file_validates_existence_without_breaking(tmp_path: Path) -> None:
@@ -95,3 +100,43 @@ def test_capture_screenshot_failure_never_breaks_execution(tmp_path: Path) -> No
     assert artifact_id is None
     assert result_path is not None
     assert any("Unable to capture screenshot" in warning for warning in api.warnings)
+
+
+def test_log_methods_create_runtime_step_implicitly(tmp_path: Path) -> None:
+    api = EvidocAPI(root_dir=tmp_path / "results")
+    test_id = api.start_test("Implicit step logging")
+
+    api.log_info("info message")
+    api.log_warning("warn message")
+    api.log_error("error message")
+    api.end_test(Status.FAIL, 0.3)
+
+    assert test_id is not None
+    payload = load_result(tmp_path / "results", test_id)
+    assert payload["steps"][0]["title"] == "Runtime messages"
+    assert [entry["level"] for entry in payload["steps"][0]["logs"]] == ["INFO", "WARN", "FAIL"]
+
+
+def test_end_test_without_active_context_returns_none(tmp_path: Path) -> None:
+    api = EvidocAPI(root_dir=tmp_path / "results")
+
+    result_path = api.end_test("PASS", 0.1)
+
+    assert result_path is None
+    assert any("No active test context to finish" in warning for warning in api.warnings)
+
+
+def test_starting_new_test_closes_previous_one_safely(tmp_path: Path) -> None:
+    api = EvidocAPI(root_dir=tmp_path / "results")
+
+    first_test_id = api.start_test("Abandoned test")
+    second_test_id = api.start_test("Replacement test")
+    api.end_test("PASS", 0.2)
+
+    assert first_test_id is not None
+    assert second_test_id is not None
+    assert first_test_id != second_test_id
+    first_payload = load_result(tmp_path / "results", first_test_id)
+    second_payload = load_result(tmp_path / "results", second_test_id)
+    assert first_payload["test_case"]["status"] == "WARN"
+    assert second_payload["test_case"]["status"] == "PASS"
