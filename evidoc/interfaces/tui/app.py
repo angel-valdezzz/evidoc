@@ -3,9 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from textual.app import App, ComposeResult
-from textual.containers import Container, Horizontal, Vertical
-from textual.reactive import reactive
-from textual.widgets import Button, Footer, Header, Input, Label, Select, Static
+from textual.binding import Binding
+from textual.containers import Container, Horizontal, Vertical, VerticalScroll
+from textual.events import Resize
+from textual.widgets import Button, Footer, Header, Input, Label, Select, Static, TabPane, TabbedContent
 
 from evidoc.infrastructure.bootstrap import build_generate_use_case
 
@@ -13,7 +14,14 @@ from evidoc.infrastructure.bootstrap import build_generate_use_case
 class EvidocTui(App[None]):
     TITLE = "Evidoc"
     SUB_TITLE = "Evidence report generator"
-    active_tab = reactive("welcome")
+
+    BINDINGS = [
+        Binding("f1", "show_welcome", "Bienvenida"),
+        Binding("f2", "show_operation", "Operacion"),
+        Binding("ctrl+g", "generate_report", "Generar", show=False),
+        Binding("ctrl+s", "browse_source", "Buscar origen", show=False),
+        Binding("ctrl+o", "browse_output", "Buscar destino", show=False),
+    ]
 
     CSS = """
     Screen {
@@ -38,26 +46,26 @@ class EvidocTui(App[None]):
         color: $text-muted;
     }
 
-    #workspace {
+    #main_tabs {
         height: 1fr;
     }
 
-    #tabs {
-        margin-bottom: 1;
+    TabPane {
+        padding: 0;
+    }
+
+    #welcome_scroll,
+    #operation_scroll {
+        height: 1fr;
+    }
+
+    #workspace_body {
+        layout: horizontal;
         height: auto;
     }
 
-    .tab-button {
-        width: auto;
-        min-width: 18;
-        margin-right: 1;
-        border: ascii $surface;
-    }
-
-    .tab-button.-active {
-        border: ascii $primary;
-        background: $primary 15%;
-        text-style: bold;
+    #workspace_body.-narrow {
+        layout: vertical;
     }
 
     .panel {
@@ -72,17 +80,13 @@ class EvidocTui(App[None]):
         margin-right: 1;
     }
 
+    #workspace_body.-narrow #form_panel {
+        margin-right: 0;
+        margin-bottom: 1;
+    }
+
     #summary_panel {
         width: 1fr;
-    }
-
-    .tab-panel {
-        display: none;
-        height: 1fr;
-    }
-
-    .tab-panel.-visible {
-        display: block;
     }
 
     .section_title {
@@ -98,17 +102,45 @@ class EvidocTui(App[None]):
         margin-bottom: 1;
     }
 
+    .path_row {
+        layout: horizontal;
+        height: auto;
+    }
+
+    .path_row.-stack {
+        layout: vertical;
+    }
+
+    .path_input {
+        width: 1fr;
+        margin-right: 1;
+    }
+
+    .path_row.-stack .path_input {
+        margin-right: 0;
+        margin-bottom: 1;
+    }
+
+    .browse_button {
+        width: 16;
+        min-width: 16;
+    }
+
     .hint {
         color: $text-muted;
         margin-top: 1;
     }
 
-    Select, Input, Button {
+    Select,
+    Input,
+    Button {
         width: 1fr;
         border: ascii $surface;
     }
 
-    Select:focus, Input:focus, Button:focus {
+    Select:focus,
+    Input:focus,
+    Button:focus {
         border: ascii $primary;
     }
 
@@ -147,13 +179,12 @@ class EvidocTui(App[None]):
                     "Configure the input folders and output format before generating the final evidence package. ASCII layout mode keeps the interface stable in basic Windows CMD.",
                     id="hero_copy",
                 )
-            with Horizontal(id="tabs"):
-                yield Button("Bienvenida", id="tab_welcome", classes="tab-button")
-                yield Button("Generacion", id="tab_generate", classes="tab-button")
-            with Container(id="workspace"):
-                with Vertical(classes="panel tab-panel", id="welcome_panel"):
-                    yield Static(
-                        r"""
+            with TabbedContent(initial="welcome", id="main_tabs"):
+                with TabPane("Bienvenida", id="welcome"):
+                    with VerticalScroll(id="welcome_scroll"):
+                        with Vertical(classes="panel", id="welcome_panel"):
+                            yield Static(
+                                r"""
   ________   ___      ___   ________   ________   ________
  |\   ____\ |\  \    /  /| |\   ___  \|\   ___  \|\   ____\
  \ \  \___| \ \  \  /  / / \ \  \\ \  \ \  \\ \  \ \  \___|
@@ -161,75 +192,113 @@ class EvidocTui(App[None]):
    \ \  \____ \ \    / /     \ \  \\ \  \ \  \\ \  \ \  \____
     \ \_______\\ \__/ /       \ \__\\ \__\ \__\\ \__\ \_______\
      \|_______| \|__|/         \|__| \|__|\|__| \|__|\|_______|
-                        """.strip("\n"),
-                        id="ascii_art",
-                    )
-                    yield Static(
-                        "Welcome to Evidoc. This console helps operators turn execution artifacts into stakeholder-ready evidence reports.",
-                        id="welcome_copy",
-                    )
-                    yield Static("Recommended flow", classes="section_title")
-                    yield Static("1. Open the Generacion tab.")
-                    yield Static("2. Point to the source and output folders.")
-                    yield Static("3. Choose the output format and execution mode.")
-                    yield Static("4. Generate the report and confirm the resulting path.")
-                with Vertical(classes="tab-panel -visible", id="generate_panel"):
-                    with Horizontal(id="workspace_body"):
-                        with Vertical(classes="panel", id="form_panel"):
-                            yield Static("Report setup", classes="section_title")
-                            with Vertical(classes="field"):
-                                yield Label("Source directory")
-                                yield Input(value="./results", id="source_dir", placeholder="Example: ./results")
-                            with Vertical(classes="field"):
-                                yield Label("Output directory")
-                                yield Input(value="./reports", id="output_dir", placeholder="Example: ./reports")
-                            with Vertical(classes="field"):
-                                yield Label("Output format")
-                                yield Select([("PDF report", "pdf"), ("DOCX report", "docx")], value="pdf", id="format")
-                            with Vertical(classes="field"):
-                                yield Label("Execution mode")
-                                yield Select(
-                                    [("Complete run", "run"), ("Single result", "single")],
-                                    value="run",
-                                    id="mode",
-                                )
-                            yield Static(
-                                "Use complete run for batch execution or single result when you only need one evidence set.",
-                                classes="hint",
+                                """.strip("\n"),
+                                id="ascii_art",
                             )
-                            yield Button("Generate report", id="generate", variant="primary")
-                        with Vertical(classes="panel", id="summary_panel"):
-                            yield Static("Operator checklist", classes="section_title")
-                            yield Static("1. Confirm the source folder contains execution artifacts.")
-                            yield Static("2. Choose the target folder where the report should be written.")
-                            yield Static("3. Select the format required by the stakeholder.")
-                            yield Static("4. Run generation and verify the resulting path notification.")
-                            yield Static("Ready to generate with the current configuration.", id="status")
+                            yield Static(
+                                "Welcome to Evidoc. This console helps operators turn execution artifacts into stakeholder-ready evidence reports.",
+                                id="welcome_copy",
+                            )
+                            yield Static("Quick start", classes="section_title")
+                            yield Static("1. Press F2 to open Operacion.")
+                            yield Static("2. Use Ctrl+S and Ctrl+O to pick the source and output folders.")
+                            yield Static("3. Adjust format and mode according to the reporting target.")
+                            yield Static("4. Press Ctrl+G or activate Generate report to run the process.")
+                with TabPane("Operacion", id="operation"):
+                    with VerticalScroll(id="operation_scroll"):
+                        with Container(id="workspace_body"):
+                            with Vertical(classes="panel", id="form_panel"):
+                                yield Static("Report setup", classes="section_title")
+                                with Vertical(classes="field"):
+                                    yield Label("Source directory")
+                                    with Container(classes="path_row", id="source_path_row"):
+                                        yield Input(
+                                            value="./results",
+                                            id="source_dir",
+                                            placeholder="Example: ./results",
+                                            classes="path_input",
+                                        )
+                                        yield Button("Browse", id="browse_source", classes="browse_button")
+                                with Vertical(classes="field"):
+                                    yield Label("Output directory")
+                                    with Container(classes="path_row", id="output_path_row"):
+                                        yield Input(
+                                            value="./reports",
+                                            id="output_dir",
+                                            placeholder="Example: ./reports",
+                                            classes="path_input",
+                                        )
+                                        yield Button("Browse", id="browse_output", classes="browse_button")
+                                with Vertical(classes="field"):
+                                    yield Label("Output format")
+                                    yield Select([("PDF report", "pdf"), ("DOCX report", "docx")], value="pdf", id="format")
+                                with Vertical(classes="field"):
+                                    yield Label("Execution mode")
+                                    yield Select(
+                                        [("Complete run", "run"), ("Single result", "single")],
+                                        value="run",
+                                        id="mode",
+                                    )
+                                yield Static(
+                                    "Shortcuts: F1 welcome, F2 operation, Ctrl+S source folder, Ctrl+O output folder, Ctrl+G generate.",
+                                    classes="hint",
+                                )
+                                yield Static(
+                                    "Use complete run for batch execution or single result when you only need one evidence set.",
+                                    classes="hint",
+                                )
+                                yield Button("Generate report", id="generate", variant="primary")
+                            with Vertical(classes="panel", id="summary_panel"):
+                                yield Static("Operator checklist", classes="section_title")
+                                yield Static("1. Confirm the source folder contains execution artifacts.")
+                                yield Static("2. Choose the target folder where the report should be written.")
+                                yield Static("3. Select the format required by the stakeholder.")
+                                yield Static("4. Run generation and verify the resulting path notification.")
+                                yield Static("Ready to generate with the current configuration.", id="status")
         yield Footer()
 
     def on_mount(self) -> None:
-        self._refresh_tabs()
+        self._sync_layout()
 
-    def watch_active_tab(self) -> None:
-        self._refresh_tabs()
+    def on_resize(self, event: Resize) -> None:
+        self._sync_layout()
 
-    def _refresh_tabs(self) -> None:
+    def _sync_layout(self) -> None:
         if not self.is_mounted:
             return
-        self.query_one("#tab_welcome", Button).set_class(self.active_tab == "welcome", "-active")
-        self.query_one("#tab_generate", Button).set_class(self.active_tab == "generate", "-active")
-        self.query_one("#welcome_panel").set_class(self.active_tab == "welcome", "-visible")
-        self.query_one("#generate_panel").set_class(self.active_tab == "generate", "-visible")
+        narrow = self.size.width < 120
+        self.query_one("#workspace_body").set_class(narrow, "-narrow")
+        self.query_one("#source_path_row").set_class(narrow, "-stack")
+        self.query_one("#output_path_row").set_class(narrow, "-stack")
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "tab_welcome":
-            self.active_tab = "welcome"
-            return
-        if event.button.id == "tab_generate":
-            self.active_tab = "generate"
-            return
-        if event.button.id != "generate":
-            return
+    def _set_active_tab(self, tab_id: str) -> None:
+        self.query_one("#main_tabs", TabbedContent).active = tab_id
+
+    def _pick_directory(self, title: str) -> str | None:
+        try:
+            from tkinter import Tk, filedialog
+        except ImportError:
+            self.notify("File dialog is not available in this environment.", severity="error")
+            return None
+
+        root = Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        root.update()
+        try:
+            selected = filedialog.askdirectory(title=title)
+        finally:
+            root.destroy()
+        return selected or None
+
+    def _browse_into_input(self, input_id: str, title: str) -> None:
+        selected_path = self._pick_directory(title)
+        if selected_path:
+            self.query_one(f"#{input_id}", Input).value = selected_path
+            self.notify(f"Selected: {selected_path}")
+
+    def _run_generation(self) -> None:
+        self._set_active_tab("operation")
         self.query_one("#status", Static).update("Generating report. Please wait...")
         source_dir = Path(self.query_one("#source_dir", Input).value)
         output_dir = Path(self.query_one("#output_dir", Input).value)
@@ -248,3 +317,30 @@ class EvidocTui(App[None]):
         message = "Generated: " + ", ".join(str(path) for path in outputs) if outputs else "No results found"
         self.query_one("#status", Static).update(message)
         self.notify(message)
+
+    def action_show_welcome(self) -> None:
+        self._set_active_tab("welcome")
+
+    def action_show_operation(self) -> None:
+        self._set_active_tab("operation")
+
+    def action_browse_source(self) -> None:
+        self._set_active_tab("operation")
+        self._browse_into_input("source_dir", "Select the source directory")
+
+    def action_browse_output(self) -> None:
+        self._set_active_tab("operation")
+        self._browse_into_input("output_dir", "Select the output directory")
+
+    def action_generate_report(self) -> None:
+        self._run_generation()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "browse_source":
+            self.action_browse_source()
+            return
+        if event.button.id == "browse_output":
+            self.action_browse_output()
+            return
+        if event.button.id == "generate":
+            self._run_generation()
