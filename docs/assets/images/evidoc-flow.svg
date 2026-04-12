@@ -13,12 +13,12 @@
     <text x="145" y="225" fill="#fff" font-size="26" text-anchor="middle">1. Prueba</text>
     <text x="145" y="260" fill="#b2dfdb" font-size="18" text-anchor="middle">Robot, Python</text>
     <text x="145" y="288" fill="#b2dfdb" font-size="18" text-anchor="middle">o framework propio</text>
-    <rect x="285" y="140" width="190" height="220" rx="24" fill="#00695c"/>
-    <text x="380" y="200" fill="#fff" font-size="26" text-anchor="middle">2. Captura</text>
-    <text x="380" y="238" fill="#d7fff8" font-size="18" text-anchor="middle">Pasos</text>
-    <text x="380" y="268" fill="#d7fff8" font-size="18" text-anchor="middle">Logs</text>
-    <text x="380" y="298" fill="#d7fff8" font-size="18" text-anchor="middle">Screenshots</text>
-    <text x="380" y="328" fill="#d7fff8" font-size="18" text-anchor="middle">Archivos</text>
+    <rect x="275" y="130" width="210" height="240" rx="28" fill="#00695c"/>
+    <text x="380" y="192" fill="#fff" font-size="28" font-weight="700" text-anchor="middle">2. Captura</text>
+    <text x="380" y="236" fill="#d7fff8" font-size="18" text-anchor="middle">Pasos con estado</text>
+    <text x="380" y="272" fill="#d7fff8" font-size="18" text-anchor="middle">Logs con contexto</text>
+    <text x="380" y="308" fill="#d7fff8" font-size="18" text-anchor="middle">Screenshots</text>
+    <text x="380" y="344" fill="#d7fff8" font-size="18" text-anchor="middle">Archivos adjuntos</text>
     <rect x="520" y="170" width="190" height="160" rx="24" fill="#00897b"/>
     <text x="615" y="225" fill="#fff" font-size="26" text-anchor="middle">3. Resultado</text>
     <text x="615" y="260" fill="#e0f7fa" font-size="18" text-anchor="middle">JSON + artifacts/</text>
@@ -29,7 +29,7 @@
     <text x="842.5" y="288" fill="#403300" font-size="18" text-anchor="middle">listo para compartir</text>
     <path d="M240 250h35" stroke="#004d40" stroke-width="10" stroke-linecap="round"/>
     <polygon points="287,250 264,235 264,265" fill="#004d40"/>
-    <path d="M475 250h35" stroke="#00695c" stroke-width="10" stroke-linecap="round"/>
+    <path d="M485 250h25" stroke="#00695c" stroke-width="10" stroke-linecap="round"/>
     <polygon points="522,250 499,235 499,265" fill="#00695c"/>
     <path d="M710 250h30" stroke="#00897b" stroke-width="10" stroke-linecap="round"/>
     <polygon points="752,250 729,235 729,265" fill="#00897b"/>

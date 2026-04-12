@@ -21,13 +21,13 @@ El proyecto incluye un ejemplo funcional en el archivo `evidoc.json` de la raiz.
 
 ## Paso 2. Generar por CLI
 
-```powershell
+```bash
 poetry run evidoc generate --source_dir .\results --output_dir .\reports --mode run --format pdf
 ```
 
 ## Paso 3. Abrir la TUI
 
-```powershell
+```bash
 poetry run evidoc tui
 ```
 
@@ -44,15 +44,15 @@ Si `mode=run`, obtendras algo como:
 
 ```text
 reports/
-└── run-run_cli.pdf
+\-- run-run_cli.pdf
 ```
 
 Si `mode=single`, obtendras un archivo por prueba. El patron de nombre depende del `test_case.name` y del `test_id`.
 
 ```text
 reports/
-├── User_can_sign_in-login_valid_user.pdf
-└── Checkout_happy_path-checkout_001.pdf
+|-- User_can_sign_in-login_valid_user.pdf
+\-- Checkout_happy_path-checkout_001.pdf
 ```
 
 ??? success "Resultado esperado"

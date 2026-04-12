@@ -2,12 +2,11 @@
 
 <div class="hero">
   <div>
-    <p class="eyebrow">Fuente de verdad operativa</p>
-    <h1>Evidoc convierte la evidencia de prueba en reportes legibles, auditables y reutilizables.</h1>
+    <h1>Evidoc transforma la ejecucion de pruebas en evidencia estructurada y en reportes que se pueden leer, compartir y auditar.</h1>
     <p class="hero-copy">
       Este manual esta orientado a usuarios finales tecnicos: testers funcionales, testers de automatizacion,
-      desarrolladores y cualquier perfil que necesite capturar evidencia, entender su estructura y generar reportes
-      PDF o DOCX sin depender de interpretaciones ambiguas.
+      desarrolladores y cualquier perfil que necesite registrar pasos, conservar artefactos, entender el resultado
+      almacenado en disco y convertirlo en reportes PDF o DOCX con una narrativa clara.
     </p>
     <div class="hero-actions">
       <a class="md-button md-button--primary" href="primeros-pasos/instalacion/">Empezar instalacion</a>
@@ -15,17 +14,18 @@
     </div>
   </div>
   <a href="assets/images/evidoc-flow.svg">
-    ![Flujo operativo de Evidoc](assets/images/evidoc-flow.svg)
+    <img src="assets/images/evidoc-flow.svg" alt="Flujo operativo de Evidoc">
   </a>
 </div>
 
 ???+ abstract "Que resuelve Evidoc"
-    Evidoc separa dos preocupaciones que normalmente se mezclan en un proyecto de pruebas:
+    Evidoc ordena un problema que normalmente termina disperso entre screenshots sueltos, notas manuales y logs sin contexto:
 
-    1. **Capturar evidencia estructurada** mientras se ejecuta una prueba.
-    2. **Convertir esa evidencia en un entregable** legible por negocio, QA y auditoria.
+    1. **Capturar evidencia estructurada** durante la ejecucion de una prueba.
+    2. **Relacionar esa evidencia con pasos y mensajes** para que la historia de la ejecucion sea entendible.
+    3. **Convertir el resultado en un entregable** legible por QA, desarrollo y auditable por terceros.
 
-    Esa separacion permite cambiar la forma de ejecucion sin perder consistencia en la salida.
+    Esa separacion permite cambiar la forma de ejecucion sin perder consistencia en la salida ni en la trazabilidad del resultado.
 
 <div class="grid cards" markdown>
 

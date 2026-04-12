@@ -6,7 +6,7 @@ La TUI es util cuando alguien necesita generar reportes sin memorizar comandos, 
 
 ## Lanzamiento
 
-```powershell
+```bash
 poetry run evidoc tui
 ```
 

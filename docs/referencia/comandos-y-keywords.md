@@ -2,7 +2,7 @@
 
 ## CLI
 
-```powershell
+```bash
 poetry run evidoc generate [--source_dir PATH] [--output_dir PATH] [--mode run|single] [--format pdf|docx]
 poetry run evidoc tui
 ```
@@ -21,11 +21,16 @@ api.end_test("PASS", 3.2)
 
 ## Robot Framework
 
-```robot
-Log Step    Paso visible    PASS
-Log Info    Mensaje tecnico
-Log Warning    Riesgo detectado
-Log Error    Fallo observado
-Attach Artifact    ${CURDIR}${/}archivo.txt    Archivo de soporte
-Capture Screenshot    driver=${driver}    title=Pantalla final
+```robotframework
+*** Settings ***
+Library    evidoc.robot
+
+*** Test Cases ***
+Registrar Evidencia Minima
+    Log Step    Paso visible    PASS
+    Log Info    Mensaje tecnico
+    Log Warning    Riesgo detectado
+    Log Error    Fallo observado
+    Attach Artifact    ${CURDIR}${/}archivo.txt    Archivo de soporte
+    Capture Screenshot    driver=${driver}    title=Pantalla final
 ```

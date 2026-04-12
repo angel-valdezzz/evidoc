@@ -6,7 +6,7 @@ Usa la CLI cuando ya tienes resultados capturados y quieres generar reportes de 
 
 ## Comando principal
 
-```powershell
+```bash
 poetry run evidoc generate --source_dir .\results --output_dir .\reports --mode run --format pdf
 ```
 
@@ -23,19 +23,19 @@ poetry run evidoc generate --source_dir .\results --output_dir .\reports --mode 
 
 === "Un PDF consolidado"
 
-    ```powershell
+    ```bash
     poetry run evidoc generate --source_dir .\results --output_dir .\reports --mode run --format pdf
     ```
 
 === "Un DOCX por prueba"
 
-    ```powershell
+    ```bash
     poetry run evidoc generate --source_dir .\results --output_dir .\reports --mode single --format docx
     ```
 
 === "Usando autodeteccion de `evidoc.json`"
 
-    ```powershell
+    ```bash
     poetry run evidoc generate
     ```
 

@@ -2,7 +2,7 @@
 
 ## Requisitos
 
-- Python 3.14 disponible en `C:\Users\Casa\AppData\Local\Programs\Python\Python314\python.exe`
+- Python 3.14 disponible en tu entorno
 - Poetry 2.x
 - Un directorio de trabajo con permisos de escritura para `results/` y `reports/`
 
@@ -10,15 +10,14 @@
 
 === "Poetry"
 
-    ```powershell
-    Set-Alias python "C:\Users\Casa\AppData\Local\Programs\Python\Python314\python.exe"
+    ```bash
     poetry env use python
     poetry install --with test,acceptance,docs
     ```
 
 === "Validacion"
 
-    ```powershell
+    ```bash
     poetry run evidoc --help
     poetry run mkdocs build
     ```
@@ -30,5 +29,5 @@
 - La API Python del paquete
 - Las dependencias para generar el sitio documental local
 
-!!! note "Sobre el alias `python`"
-    En PowerShell el alias se define por sesion. Si abres otra terminal, vuelvelo a crear antes de ejecutar `poetry env use python`.
+!!! note "Sobre el interprete"
+    Asegurate de que `python` resuelva al interprete esperado por tu equipo o por el entorno local del proyecto antes de ejecutar `poetry env use python`.
