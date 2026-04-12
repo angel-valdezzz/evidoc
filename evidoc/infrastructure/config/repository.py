@@ -6,7 +6,7 @@ from pathlib import Path
 
 from jsonschema import validate
 
-from evidoc.application.ports import ConfigRepository
+from evidoc.application.config_repository import ConfigRepository
 
 
 class SchemaValidatedConfigRepository(ConfigRepository):

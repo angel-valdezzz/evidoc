@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from evidoc.application.ports import WarningSink
+from evidoc.application.warning_sink import WarningSink
 
 
 class LoggerWarningSink(WarningSink):

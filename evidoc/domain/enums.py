@@ -1,27 +1,6 @@
-from __future__ import annotations
+from evidoc.domain.artifact_type import ArtifactType
+from evidoc.domain.generate_mode import GenerateMode
+from evidoc.domain.report_format import ReportFormat
+from evidoc.domain.status import Status
 
-from enum import StrEnum
-
-
-class Status(StrEnum):
-    PASS = "PASS"
-    FAIL = "FAIL"
-    WARN = "WARN"
-    INFO = "INFO"
-    SKIP = "SKIP"
-
-
-class ArtifactType(StrEnum):
-    IMAGE = "image"
-    FILE = "file"
-    LOG = "log"
-
-
-class ReportFormat(StrEnum):
-    PDF = "pdf"
-    DOCX = "docx"
-
-
-class GenerateMode(StrEnum):
-    SINGLE = "single"
-    RUN = "run"
+__all__ = ["ArtifactType", "GenerateMode", "ReportFormat", "Status"]

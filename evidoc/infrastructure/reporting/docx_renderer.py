@@ -5,26 +5,26 @@ from pathlib import Path
 from docx import Document
 from docx.shared import Inches
 
-from evidoc.application.ports import ReportRenderer
-from evidoc.domain.enums import ArtifactType
-from evidoc.domain.models import TestResult
+from evidoc.application.report_renderer import ReportRenderer
+from evidoc.domain.artifact_type import ArtifactType
+from evidoc.domain.run import Run
 
 
 class DocxReportRenderer(ReportRenderer):
     format_name = "docx"
 
-    def render_single(self, source_dir: Path, output_dir: Path, result: TestResult) -> Path:
+    def render_single(self, source_dir: Path, output_dir: Path, result: Run) -> Path:
         output = output_dir / f"{result.test_case.name.replace(' ', '_')}-{result.test_id}.docx"
         self._build(output, source_dir, [result])
         return output
 
-    def render_run(self, source_dir: Path, output_dir: Path, results: list[TestResult]) -> Path:
+    def render_run(self, source_dir: Path, output_dir: Path, results: list[Run]) -> Path:
         run_id = results[0].run_id if results else "empty"
         output = output_dir / f"run-{run_id}.docx"
         self._build(output, source_dir, results)
         return output
 
-    def _build(self, output_path: Path, source_dir: Path, results: list[TestResult]) -> None:
+    def _build(self, output_path: Path, source_dir: Path, results: list[Run]) -> None:
         document = Document()
         document.add_heading("Evidoc Report", level=0)
         for index, result in enumerate(results):

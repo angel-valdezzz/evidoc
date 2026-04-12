@@ -3,8 +3,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 from jsonschema import validate
 
+from evidoc import api as evidoc_api
 from evidoc.application.services import ExecutionService, GenerateReportUseCase, InMemoryWarningSink, LoadConfigUseCase
 from evidoc.domain.enums import GenerateMode, ReportFormat, Status
 from evidoc.infrastructure.bootstrap import project_root
@@ -13,6 +15,8 @@ from evidoc.infrastructure.filesystem.repository import FilesystemArtifactStorag
 from evidoc.infrastructure.reporting.docx_renderer import DocxReportRenderer
 from evidoc.infrastructure.reporting.pdf_renderer import PdfReportRenderer
 from evidoc.listener import Listener
+
+pytestmark = pytest.mark.unit
 
 
 def build_runtime(tmp_path: Path) -> tuple[ExecutionService, InMemoryWarningSink]:
@@ -43,7 +47,8 @@ def test_unique_test_ids_and_json_contract(tmp_path: Path) -> None:
     second = runtime.start_test("Second")
     runtime.finish_test(Status.FAIL, duration=0.3)
     assert first != second
-    result_path = next((tmp_path / "results").glob("run-*/test-*/result.json"))
+    run_id = (tmp_path / "results" / ".run_id").read_text(encoding="utf-8").strip()
+    result_path = tmp_path / "results" / f"run-{run_id}" / f"test-{first}" / "result.json"
     payload = json.loads(result_path.read_text(encoding="utf-8"))
     schema = json.loads((project_root() / "schemas" / "result.schema.json").read_text(encoding="utf-8"))
     validate(payload, schema)
@@ -99,11 +104,39 @@ def test_screenshot_failure_does_not_break_execution(tmp_path: Path) -> None:
 
 
 def test_listener_creates_result_for_active_test(tmp_path: Path, monkeypatch) -> None:
-    runtime, _ = build_runtime(tmp_path)
-    monkeypatch.setattr("evidoc.listener.build_runtime", lambda: runtime)
+    evidoc_api.configure_context(root_dir=tmp_path / "results", warning_sink=InMemoryWarningSink())
     listener = Listener()
     data = type("Data", (), {"name": "Robot test"})()
     result = type("Result", (), {"status": "PASS"})()
+    try:
+        listener.start_test(data, result)
+        listener.end_test(data, result)
+        assert list((tmp_path / "results").glob("run-*/test-*/result.json"))
+    finally:
+        evidoc_api.clear_context()
+
+
+def test_listener_maps_statuses() -> None:
+    assert Listener._map_status("PASS") is Status.PASS
+    assert Listener._map_status("FAIL") is Status.FAIL
+    assert Listener._map_status("SKIP") is Status.SKIP
+    assert Listener._map_status("anything") is Status.INFO
+
+
+def test_listener_uses_public_api_functions(monkeypatch) -> None:
+    calls: list[tuple[str, object]] = []
+    listener = Listener()
+    data = type("Data", (), {"name": "Robot API test"})()
+    result = type("Result", (), {"status": "PASS"})()
+
+    monkeypatch.setattr("evidoc.listener.api.start_test", lambda name: calls.append(("start", name)))
+    monkeypatch.setattr("evidoc.listener.api.end_test", lambda status, duration: calls.append(("end", status)))
+    monkeypatch.setattr("evidoc.listener.api.clear_context", lambda: calls.append(("clear", None)))
+
     listener.start_test(data, result)
     listener.end_test(data, result)
-    assert list((tmp_path / "results").glob("run-*/test-*/result.json"))
+
+    assert calls[0] == ("start", "Robot API test")
+    assert calls[1][0] == "end"
+    assert calls[1][1] is Status.PASS
+    assert calls[2] == ("clear", None)

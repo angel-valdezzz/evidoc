@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0.0",
+  "run_id": "run_20260411_170300",
+  "test_id": "login_valid_user",
+  "generated_at": "2026-04-11T23:03:17Z",
+  "test_case": {
+    "name": "User can sign in with valid credentials",
+    "status": "PASS",
+    "duration": 12.481,
+    "application": "Evidence Portal",
+    "requirement": "AUTH-LOGIN-001",
+    "tags": ["smoke", "auth", "ui"]
+  },
+  "steps": [
+    {
+      "title": "Open login page",
+      "status": "PASS",
+      "logs": [
+        {
+          "level": "INFO",
+          "message": "Navigated to /login",
+          "timestamp": "2026-04-11T23:03:06Z"
+        }
+      ],
+      "artifact_ids": ["art_login_page"]
+    },
+    {
+      "title": "Submit credentials",
+      "status": "PASS",
+      "logs": [
+        {
+          "level": "INFO",
+          "message": "Username and password fields populated",
+          "timestamp": "2026-04-11T23:03:10Z"
+        },
+        {
+          "level": "INFO",
+          "message": "Authentication request completed with HTTP 200",
+          "timestamp": "2026-04-11T23:03:12Z"
+        }
+      ],
+      "artifact_ids": ["art_dashboard", "art_network_log"]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "art_login_page",
+      "type": "image",
+      "path": "artifacts/login-page.png",
+      "title": "Login page before submission",
+      "description": "Initial state of the authentication form."
+    },
+    {
+      "id": "art_dashboard",
+      "type": "image",
+      "path": "artifacts/dashboard.png",
+      "title": "Dashboard after successful sign-in",
+      "description": "Landing page rendered for the authenticated user."
+    },
+    {
+      "id": "art_network_log",
+      "type": "log",
+      "path": "artifacts/auth-request.json",
+      "title": "Captured authentication exchange",
+      "description": "Sanitized request and response payloads for the login call."
+    }
+  ]
+}
