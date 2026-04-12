@@ -1,67 +1,160 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "EvidocResult",
+  "$id": "https://evidoc.local/schemas/result-1.0.0.schema.json",
+  "title": "Evidoc Run Result",
   "type": "object",
-  "required": ["schema_version", "run_id", "test_id", "generated_at", "test_case", "steps", "artifacts"],
+  "required": [
+    "schema_version",
+    "run_id",
+    "test_id",
+    "generated_at",
+    "test_case",
+    "steps",
+    "artifacts"
+  ],
   "additionalProperties": false,
   "properties": {
-    "schema_version": { "type": "string" },
-    "run_id": { "type": "string" },
-    "test_id": { "type": "string" },
-    "generated_at": { "type": "string" },
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "run_id": {
+      "$ref": "#/$defs/identifier"
+    },
+    "test_id": {
+      "$ref": "#/$defs/identifier"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
     "test_case": {
-      "type": "object",
-      "required": ["name", "status", "duration"],
-      "additionalProperties": false,
-      "properties": {
-        "name": { "type": "string" },
-        "status": { "type": "string", "enum": ["PASS", "FAIL", "WARN", "INFO", "SKIP"] },
-        "duration": { "type": "number" },
-        "application": { "type": ["string", "null"] },
-        "requirement": { "type": ["string", "null"] }
-      }
+      "$ref": "#/$defs/test_case"
     },
     "steps": {
       "type": "array",
       "items": {
-        "type": "object",
-        "required": ["title", "status", "logs", "artifact_ids"],
-        "additionalProperties": false,
-        "properties": {
-          "title": { "type": "string" },
-          "status": { "type": "string", "enum": ["PASS", "FAIL", "WARN", "INFO", "SKIP"] },
-          "logs": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "required": ["level", "message", "timestamp"],
-              "additionalProperties": false,
-              "properties": {
-                "level": { "type": "string", "enum": ["PASS", "FAIL", "WARN", "INFO", "SKIP"] },
-                "message": { "type": "string" },
-                "timestamp": { "type": "string" }
-              }
-            }
-          },
-          "artifact_ids": {
-            "type": "array",
-            "items": { "type": "string" }
-          }
-        }
+        "$ref": "#/$defs/step"
       }
     },
     "artifacts": {
       "type": "array",
       "items": {
-        "type": "object",
-        "required": ["id", "type", "path"],
-        "additionalProperties": false,
-        "properties": {
-          "id": { "type": "string" },
-          "type": { "type": "string", "enum": ["image", "file", "log"] },
-          "path": { "type": "string" },
-          "title": { "type": ["string", "null"] },
-          "description": { "type": ["string", "null"] }
+        "$ref": "#/$defs/artifact"
+      }
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["PASS", "FAIL", "WARN", "INFO", "SKIP"]
+    },
+    "artifact_type": {
+      "type": "string",
+      "enum": ["image", "file", "log"]
+    },
+    "log_entry": {
+      "type": "object",
+      "required": ["level", "message", "timestamp"],
+      "additionalProperties": false,
+      "properties": {
+        "level": {
+          "$ref": "#/$defs/status"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "test_case": {
+      "type": "object",
+      "required": ["name", "status", "duration", "tags"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "$ref": "#/$defs/status"
+        },
+        "duration": {
+          "type": "number",
+          "minimum": 0
+        },
+        "application": {
+          "type": ["string", "null"]
+        },
+        "requirement": {
+          "type": ["string", "null"]
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "step": {
+      "type": "object",
+      "required": ["title", "status", "logs", "artifact_ids"],
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "$ref": "#/$defs/status"
+        },
+        "logs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/log_entry"
+          }
+        },
+        "artifact_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/identifier"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "required": ["id", "type", "path"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "type": {
+          "$ref": "#/$defs/artifact_type"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": ["string", "null"]
+        },
+        "description": {
+          "type": ["string", "null"]
         }
       }
     }

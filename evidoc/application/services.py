@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
 from evidoc.application.ports import ArtifactStorage, ConfigRepository, ReportRenderer, ResultRepository, WarningSink
 from evidoc.domain.enums import ArtifactType, ReportFormat, Status
-from evidoc.domain.models import ArtifactRef, EvidocConfig, LogEntry, StepResult, TestCaseMetadata, TestResult
+from evidoc.domain.models import SCHEMA_VERSION, ArtifactRef, EvidocConfig, LogEntry, StepResult, TestCaseMetadata, TestResult
 
 
 class InMemoryWarningSink:
@@ -40,7 +40,7 @@ class ActiveTestContext:
 
 
 class ExecutionService:
-    schema_version = "1.0"
+    schema_version = SCHEMA_VERSION
 
     def __init__(
         self,
@@ -178,7 +178,7 @@ class ExecutionService:
             schema_version=self.schema_version,
             run_id=context.run_id,
             test_id=context.test_id,
-            generated_at=datetime.utcnow().isoformat(),
+            generated_at=datetime.now(timezone.utc).isoformat(),
             test_case=TestCaseMetadata(
                 name=context.name,
                 status=status,
