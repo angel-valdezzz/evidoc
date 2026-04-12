@@ -49,5 +49,27 @@ poetry run evidoc generate --source_dir ./results --output_dir ./reports --mode 
 ## Robot Framework
 
 ```bash
-robot --listener evidoc.listener path/to/tests.robot
+robot --listener evidoc.listener --pythonpath . path/to/tests.robot
 ```
+
+Import the keyword library from Robot:
+
+```robot
+*** Settings ***
+Library    evidoc.robot
+```
+
+Minimal example:
+
+```robot
+*** Settings ***
+Library    evidoc.robot
+
+*** Test Cases ***
+Capture Evidence
+    Log Step    Open checkout    PASS
+    Log Info    Navigated to checkout
+    Attach Artifact    ${CURDIR}${/}sample.txt    Input data
+```
+
+An executable end-to-end example with a demo screenshot driver lives at `examples/robot/evidoc_example.robot`.

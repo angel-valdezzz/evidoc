@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import logging
+from contextvars import ContextVar
 from time import perf_counter
 
+from evidoc import api
 from evidoc.domain.enums import Status
-from evidoc.infrastructure.bootstrap import build_runtime
-from evidoc.infrastructure.robot.context import set_runtime
-
 
 LOGGER = logging.getLogger("evidoc.listener")
 ROBOT_LISTENER_API_VERSION = 3
@@ -14,32 +13,32 @@ ROBOT_LISTENER_API_VERSION = 3
 
 class Listener:
     def __init__(self) -> None:
-        self._runtime = build_runtime()
-        self._test_started_at: float | None = None
+        self._test_started_at: ContextVar[float | None] = ContextVar(
+            "EVIDOC_LISTENER_TEST_STARTED_AT",
+            default=None,
+        )
 
     def start_test(self, data, result) -> None:
         try:
-            self._runtime.start_test(data.name)
-            set_runtime(self._runtime)
-            self._test_started_at = perf_counter()
+            api.start_test(getattr(data, "name", "Unnamed test"))
+            self._test_started_at.set(perf_counter())
         except Exception as exc:  # pragma: no cover
             LOGGER.warning("Unable to start Evidoc test context: %s", exc)
 
     def end_test(self, data, result) -> None:
         try:
-            status = self._map_status(getattr(result, "status", "INFO"))
-            duration = 0.0
-            if self._test_started_at is not None:
-                duration = perf_counter() - self._test_started_at
-            self._runtime.finish_test(status, duration=duration)
+            started_at = self._test_started_at.get()
+            duration = 0.0 if started_at is None else perf_counter() - started_at
+            api.end_test(self._map_status(getattr(result, "status", "INFO")), duration)
         except Exception as exc:  # pragma: no cover
             LOGGER.warning("Unable to finish Evidoc test context: %s", exc)
         finally:
-            set_runtime(None)
-            self._test_started_at = None
+            api.clear_context()
+            self._test_started_at.set(None)
 
     def close(self) -> None:
-        set_runtime(None)
+        api.clear_context()
+        self._test_started_at.set(None)
 
     @staticmethod
     def _map_status(status: str) -> Status:
@@ -51,6 +50,7 @@ class Listener:
         if normalized == "SKIP":
             return Status.SKIP
         return Status.INFO
+
 
 _MODULE_LISTENER = Listener()
 

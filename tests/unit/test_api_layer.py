@@ -1,12 +1,24 @@
 from __future__ import annotations
 
 import json
+import threading
 from pathlib import Path
 
 import pytest
 from jsonschema import validate
 
-from evidoc.api import EvidocAPI
+from evidoc.api import (
+    EvidocAPI,
+    attach_artifact,
+    clear_context,
+    configure_context,
+    end_test,
+    get_current_api,
+    log_info,
+    log_step,
+    start_test,
+)
+from evidoc.application.services import InMemoryWarningSink
 from evidoc.domain.enums import Status
 from evidoc.infrastructure.bootstrap import project_root
 
@@ -140,3 +152,56 @@ def test_starting_new_test_closes_previous_one_safely(tmp_path: Path) -> None:
     second_payload = load_result(tmp_path / "results", second_test_id)
     assert first_payload["test_case"]["status"] == "WARN"
     assert second_payload["test_case"]["status"] == "PASS"
+
+
+def test_module_level_api_uses_configured_context(tmp_path: Path) -> None:
+    configure_context(root_dir=tmp_path / "results")
+
+    try:
+        test_id = start_test("Robot wrapper flow")
+        log_step("Keyword step", "PASS")
+        log_info("Keyword info")
+        result_path = end_test("PASS", 0.4)
+    finally:
+        clear_context()
+
+    assert test_id is not None
+    assert result_path is not None
+    payload = load_result(tmp_path / "results", test_id)
+    assert payload["test_case"]["name"] == "Robot wrapper flow"
+    assert payload["steps"][0]["title"] == "Keyword step"
+    assert payload["steps"][0]["logs"][0]["message"] == "Keyword info"
+
+
+def test_module_level_api_isolated_per_thread(tmp_path: Path) -> None:
+    results: list[tuple[str, str, int]] = []
+    lock = threading.Lock()
+
+    def worker(name: str) -> None:
+        root_dir = tmp_path / name
+        configure_context(root_dir=root_dir, warning_sink=InMemoryWarningSink())
+        try:
+            test_id = start_test(name)
+            log_step(f"step-{name}", "PASS")
+            artifact = root_dir / f"{name}.txt"
+            artifact.parent.mkdir(parents=True, exist_ok=True)
+            artifact.write_text(name, encoding="utf-8")
+            attach_artifact(artifact, f"artifact-{name}")
+            result_path = end_test("PASS", 0.1)
+            with lock:
+                results.append((name, str(result_path), id(get_current_api())))
+        finally:
+            clear_context()
+
+    threads = [threading.Thread(target=worker, args=(name,)) for name in ("alpha", "beta")]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert len(results) == 2
+    assert len({api_id for _, _, api_id in results}) == 2
+    for name, result_path, _ in results:
+        payload = json.loads(Path(result_path).read_text(encoding="utf-8"))
+        assert payload["test_case"]["name"] == name
+        assert payload["steps"][0]["title"] == f"step-{name}"

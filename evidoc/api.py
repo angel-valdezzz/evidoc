@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from contextvars import ContextVar
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +13,9 @@ from evidoc.infrastructure.bootstrap import project_root
 from evidoc.infrastructure.filesystem.repository import FilesystemArtifactStorage, FilesystemResultRepository
 
 LOGGER = logging.getLogger("evidoc.api")
+
+_CURRENT_API: ContextVar[EvidocAPI | None] = ContextVar("EVIDOC_CURRENT_API", default=None)
+_CURRENT_OPTIONS: ContextVar[dict[str, Any] | None] = ContextVar("EVIDOC_CURRENT_OPTIONS", default=None)
 
 
 class EvidocAPI:
@@ -108,10 +112,6 @@ class EvidocAPI:
                     for artifact in self._artifacts
                 ],
             }
-            test_dir = self._test_dir()
-            if test_dir is None:
-                self._warn("Unable to resolve the active test directory.")
-                return None
             result_path = self._result_repository.save_test_result(self._root_dir, run_from_dict(payload))
             return str(result_path)
         except Exception as exc:  # pragma: no cover
@@ -275,31 +275,60 @@ class EvidocAPI:
 
         return datetime.now(timezone.utc).isoformat()
 
-_DEFAULT_API = EvidocAPI()
+
+def configure_context(
+    *,
+    root_dir: Path | str = Path("./results"),
+    result_schema_path: Path | None = None,
+    warning_sink: WarningSink | None = None,
+) -> EvidocAPI:
+    options = {
+        "root_dir": Path(root_dir),
+        "result_schema_path": result_schema_path,
+        "warning_sink": warning_sink,
+    }
+    _CURRENT_OPTIONS.set(options)
+    api = EvidocAPI(**options)
+    _CURRENT_API.set(api)
+    return api
+
+
+def get_current_api() -> EvidocAPI:
+    api = _CURRENT_API.get()
+    if api is not None:
+        return api
+    options = _CURRENT_OPTIONS.get() or {}
+    api = EvidocAPI(**options)
+    _CURRENT_API.set(api)
+    return api
+
+
+def clear_context() -> None:
+    _CURRENT_API.set(None)
 
 
 def start_test(test_name: str) -> str | None:
-    return _DEFAULT_API.start_test(test_name)
+    return get_current_api().start_test(test_name)
 
 
 def end_test(status: str | Status, duration: float) -> str | None:
-    return _DEFAULT_API.end_test(status, duration)
+    return get_current_api().end_test(status, duration)
 
 
 def log_step(title: str, status: str | Status = Status.INFO) -> None:
-    _DEFAULT_API.log_step(title, status)
+    get_current_api().log_step(title, status)
 
 
 def log_info(message: str) -> None:
-    _DEFAULT_API.log_info(message)
+    get_current_api().log_info(message)
 
 
 def log_warning(message: str) -> None:
-    _DEFAULT_API.log_warning(message)
+    get_current_api().log_warning(message)
 
 
 def log_error(message: str) -> None:
-    _DEFAULT_API.log_error(message)
+    get_current_api().log_error(message)
 
 
 def capture_screenshot(
@@ -308,11 +337,11 @@ def capture_screenshot(
     title: str | None = None,
     description: str | None = None,
 ) -> str | None:
-    return _DEFAULT_API.capture_screenshot(driver, element=element, title=title, description=description)
+    return get_current_api().capture_screenshot(driver, element=element, title=title, description=description)
 
 
 def attach_file(path: str | Path, description: str | None = None) -> str | None:
-    return _DEFAULT_API.attach_file(path, description)
+    return get_current_api().attach_file(path, description)
 
 
 def attach_artifact(path: str | Path, description: str | None = None) -> str | None:

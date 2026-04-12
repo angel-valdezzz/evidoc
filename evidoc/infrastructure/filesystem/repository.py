@@ -22,8 +22,12 @@ class FilesystemResultRepository(ResultRepository):
         if run_id_file.exists():
             return run_id_file.read_text(encoding="utf-8").strip()
         run_id = uuid4().hex[:12]
-        run_id_file.write_text(run_id, encoding="utf-8")
-        return run_id
+        try:
+            with run_id_file.open("x", encoding="utf-8") as handle:
+                handle.write(run_id)
+            return run_id
+        except FileExistsError:
+            return run_id_file.read_text(encoding="utf-8").strip()
 
     def save_test_result(self, root_dir: Path, result: TestResult) -> Path:
         test_dir = root_dir / f"run-{result.run_id}" / f"test-{result.test_id}"
