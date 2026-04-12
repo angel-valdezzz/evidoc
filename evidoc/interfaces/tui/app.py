@@ -9,7 +9,7 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Container, Horizontal, ScrollableContainer, Vertical
 from textual.events import Resize
-from textual.widgets import Button, Footer, Header, Input, Label, Select, Static, TabbedContent, TabPane
+from textual.widgets import Button, Header, Input, Label, Select, Static, TabbedContent, TabPane
 
 from evidoc.infrastructure.bootstrap import build_generate_use_case
 
@@ -35,14 +35,18 @@ class EvidocTui(App[None]):
 
     CSS = """
     Screen {
-        layout: vertical;
+        background: $surface;
     }
 
     Header {
+        dock: top;
+        height: 1;
         background: $boost;
     }
 
     TabbedContent {
+        width: 1fr;
+        dock: top;
         height: 1fr;
     }
 
@@ -69,6 +73,7 @@ class EvidocTui(App[None]):
     .field-row {
         layout: horizontal;
         height: auto;
+        align: left middle;
         margin-bottom: 1;
     }
 
@@ -80,6 +85,7 @@ class EvidocTui(App[None]):
 
     .field-input {
         width: 1fr;
+        height: 3;
         border: ascii $surface;
     }
 
@@ -90,7 +96,21 @@ class EvidocTui(App[None]):
     .browse-btn {
         width: 14;
         min-width: 14;
+        height: 3;
         margin-left: 1;
+    }
+
+    Select {
+        height: 3;
+        border: ascii $surface;
+    }
+
+    Select:focus {
+        border: ascii $primary;
+    }
+
+    .btn-row Button {
+        height: 3;
     }
 
     .hint {
@@ -244,8 +264,6 @@ class EvidocTui(App[None]):
                             yield Static("3. Select the format required by the stakeholder.")
                             yield Static("4. Run generation and verify the resulting path notification.")
                             yield Static("Ready to generate with the current configuration.", id="status")
-        yield Footer()
-
     def on_mount(self) -> None:
         self.action_show_welcome()
         self._sync_layout()
