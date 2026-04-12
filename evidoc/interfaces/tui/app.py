@@ -9,7 +9,8 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Container, Horizontal, ScrollableContainer, Vertical
 from textual.events import Resize
-from textual.widgets import Button, Header, Input, Label, Select, Static, TabbedContent, TabPane
+from textual.reactive import reactive
+from textual.widgets import Button, Header, Input, Label, Static, TabbedContent, TabPane
 
 from evidoc.infrastructure.bootstrap import build_generate_use_case
 
@@ -24,6 +25,8 @@ WELCOME_ART = r"""
 class EvidocTui(App[None]):
     TITLE = "Evidoc"
     SUB_TITLE = "Evidence report generator"
+    selected_format = reactive("pdf")
+    selected_mode = reactive("run")
 
     BINDINGS = [
         Binding("f1", "show_welcome", "Bienvenida"),
@@ -137,17 +140,29 @@ class EvidocTui(App[None]):
         color: $text;
     }
 
-    Select {
-        height: 3;
-        border: none;
-        background: $surface-lighten-1;
-        color: $text;
-        padding: 0 1;
+    .choice-group {
+        layout: horizontal;
+        width: 1fr;
+        height: auto;
     }
 
-    Select:focus {
-        background: $surface-lighten-2;
-        tint: $primary 8%;
+    .choice-button {
+        width: 1fr;
+        height: 3;
+        margin-right: 1;
+        border: none;
+        background: $surface-lighten-1;
+        color: $text-muted;
+    }
+
+    .choice-button.last {
+        margin-right: 0;
+    }
+
+    .choice-button.-selected {
+        background: $primary 20%;
+        color: $text;
+        text-style: bold;
     }
 
     .btn-row Button {
@@ -267,6 +282,19 @@ class EvidocTui(App[None]):
         margin-top: 1;
     }
 
+    #workspace.-narrow .choice-group {
+        layout: vertical;
+    }
+
+    #workspace.-narrow .choice-button {
+        margin-right: 0;
+        margin-bottom: 1;
+    }
+
+    #workspace.-narrow .choice-button.last {
+        margin-bottom: 0;
+    }
+
     #status {
         margin-top: 1;
         border: none;
@@ -313,14 +341,14 @@ class EvidocTui(App[None]):
                                 yield Button("Browse", id="browse_output", classes="browse-btn")
                             with Horizontal(classes="field-row"):
                                 yield Label("Output format", classes="field-label")
-                                yield Select([("PDF report", "pdf"), ("DOCX report", "docx")], value="pdf", id="format")
+                                with Horizontal(classes="choice-group"):
+                                    yield Button("PDF report", id="format_pdf", classes="choice-button")
+                                    yield Button("DOCX report", id="format_docx", classes="choice-button last")
                             with Horizontal(classes="field-row"):
                                 yield Label("Execution mode", classes="field-label")
-                                yield Select(
-                                    [("Complete run", "run"), ("Single result", "single")],
-                                    value="run",
-                                    id="mode",
-                                )
+                                with Horizontal(classes="choice-group"):
+                                    yield Button("Complete run", id="mode_run", classes="choice-button")
+                                    yield Button("Single result", id="mode_single", classes="choice-button last")
                             yield Static(
                                 "Shortcuts: F1 bienvenida, F2 operacion, Ctrl+S source folder, Ctrl+O output folder, Ctrl+G generate.",
                                 classes="hint",
@@ -340,6 +368,7 @@ class EvidocTui(App[None]):
                             yield Static("Ready to generate with the current configuration.", id="status")
     def on_mount(self) -> None:
         self.action_show_welcome()
+        self._refresh_choices()
         self._sync_layout()
 
     def on_resize(self, event: Resize) -> None:
@@ -350,6 +379,14 @@ class EvidocTui(App[None]):
             return
         narrow = self.size.width <= 110
         self.query_one("#workspace").set_class(narrow, "-narrow")
+
+    def _refresh_choices(self) -> None:
+        if not self.is_mounted:
+            return
+        self.query_one("#format_pdf", Button).set_class(self.selected_format == "pdf", "-selected")
+        self.query_one("#format_docx", Button).set_class(self.selected_format == "docx", "-selected")
+        self.query_one("#mode_run", Button).set_class(self.selected_mode == "run", "-selected")
+        self.query_one("#mode_single", Button).set_class(self.selected_mode == "single", "-selected")
 
     def _open_picker_in_subprocess(self, mode: str, title: str) -> str | None:
         if mode == "directory":
@@ -381,8 +418,8 @@ class EvidocTui(App[None]):
         self.query_one("#status", Static).update("Generating report. Please wait...")
         source_dir = Path(self.query_one("#source_dir", Input).value)
         output_dir = Path(self.query_one("#output_dir", Input).value)
-        format_value = self.query_one("#format", Select).value
-        mode_value = self.query_one("#mode", Select).value
+        format_value = self.selected_format
+        mode_value = self.selected_mode
         load_config, generate_reports = build_generate_use_case()
         config = load_config.execute(
             overrides={
@@ -415,6 +452,22 @@ class EvidocTui(App[None]):
         self._run_generation()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "format_pdf":
+            self.selected_format = "pdf"
+            self._refresh_choices()
+            return
+        if event.button.id == "format_docx":
+            self.selected_format = "docx"
+            self._refresh_choices()
+            return
+        if event.button.id == "mode_run":
+            self.selected_mode = "run"
+            self._refresh_choices()
+            return
+        if event.button.id == "mode_single":
+            self.selected_mode = "single"
+            self._refresh_choices()
+            return
         if event.button.id == "browse_source":
             self.action_browse_source()
             return
