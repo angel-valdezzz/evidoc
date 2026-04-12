@@ -1,13 +1,25 @@
 from __future__ import annotations
 
-"""Robot Framework library for capturing Evidoc execution evidence.
+"""<p>Biblioteca de Robot Framework para capturar evidencia con Evidoc.</p>
 
-Import with ``Library    evidoc.robot`` when you want test steps, runtime logs,
-screenshots, or support files to become part of the structured Evidoc result.
+<p>Utilizala cuando quieras registrar pasos, mensajes, capturas de pantalla o
+archivos adjuntos dentro del resultado estructurado de Evidoc.</p>
 
-The library is intentionally thin: every keyword delegates to :mod:`evidoc.api`.
-Use it together with ``--listener evidoc.listener`` so each Robot test opens and
-closes its own Evidoc context automatically.
+<h2>Configuracion recomendada</h2>
+
+<p>Importa la biblioteca con:</p>
+<pre>Library    evidoc.robot</pre>
+
+<p>Ejecuta Robot Framework con:</p>
+<pre>robot --listener evidoc.listener path/to/tests.robot</pre>
+
+<h2>Comportamiento</h2>
+
+<ul>
+  <li>Esta biblioteca delega la persistencia en <code>evidoc.api</code>.</li>
+  <li>Se recomienda usarla junto con <code>evidoc.listener</code>.</li>
+  <li>Si no existe un contexto de prueba activo, Evidoc registra una advertencia.</li>
+</ul>
 """
 
 from pathlib import Path
@@ -20,32 +32,40 @@ from evidoc import api
 
 ROBOT_LIBRARY_SCOPE = "GLOBAL"
 ROBOT_AUTO_KEYWORDS = False
+ROBOT_LIBRARY_DOC_FORMAT = "HTML"
 
 
 @library(scope="GLOBAL", auto_keywords=False)
 class RobotLibrary:
-    """Standard Robot Framework keyword library exposed by Evidoc.
+    """<p>Biblioteca principal de keywords expuesta por Evidoc.</p>
 
-    Recommended import:
+    <h2>Uso recomendado</h2>
 
-    ``Library    evidoc.robot``
+    <p>Importacion:</p>
+    <pre>Library    evidoc.robot</pre>
 
-    Runtime expectation:
+    <p>Ejecucion:</p>
+    <pre>robot --listener evidoc.listener path/to/tests.robot</pre>
 
-    ``robot --listener evidoc.listener ...``
+    <h2>Nota operativa</h2>
 
-    Keywords write evidence into the active test context managed by the
-    listener. If no test context is active, the underlying API records a
-    warning instead of failing silently.
+    <p>Las keywords escriben evidencia sobre el contexto de prueba activo. Si no
+    existe un contexto abierto, la API subyacente registra una advertencia.</p>
     """
 
     @keyword("Log Step")
     def log_step(self, title: str, status: str = "INFO") -> None:
-        """Create a business-readable step in the current test timeline.
+        """<p>Registra un paso visible dentro de la narrativa de la prueba.</p>
 
-        ``title`` is the visible step label in the generated evidence.
-        ``status`` accepts Evidoc statuses such as ``PASS``, ``FAIL``,
-        ``WARN`` or ``INFO``.
+        <h2>Argumentos</h2>
+        <ul>
+          <li><b>title</b>: texto que se mostrara como nombre del paso.</li>
+          <li><b>status</b>: estado del paso. Los valores mas comunes son PASS, FAIL,
+          WARN e INFO.</li>
+        </ul>
+
+        <h2>Recomendacion</h2>
+        <p>Usa esta keyword para dividir la evidencia en hitos faciles de leer.</p>
         """
         api.log_step(title, status)
 
@@ -58,14 +78,28 @@ class RobotLibrary:
         description: str | None = None,
         library: str | None = None,
     ) -> str | None:
-        """Capture a screenshot from a driver or another Robot library.
+        """<p>Captura una imagen desde un driver o desde otra libreria de Robot.</p>
 
-        Pass ``driver`` when you already have a live browser or UI object.
-        Pass ``library`` when the driver must be resolved through
-        ``BuiltIn().get_library_instance(...)``, for example with
-        ``SeleniumLibrary``.
+        <h2>Argumentos</h2>
+        <ul>
+          <li><b>driver</b>: objeto que ya expone una operacion de screenshot.</li>
+          <li><b>element</b>: elemento opcional para capturar una region especifica.</li>
+          <li><b>title</b>: titulo visible del artefacto generado.</li>
+          <li><b>description</b>: descripcion complementaria para el reporte.</li>
+          <li><b>library</b>: nombre de la libreria de Robot desde la que se resolvera
+          la instancia real del driver.</li>
+        </ul>
 
-        Returns the registered artifact id when the capture succeeds.
+        <h2>Uso</h2>
+        <ul>
+          <li>Usa <code>driver</code> cuando ya tienes acceso directo al objeto.</li>
+          <li>Usa <code>library</code> cuando el driver vive dentro de otra libreria,
+          por ejemplo <code>SeleniumLibrary</code>.</li>
+        </ul>
+
+        <h2>Retorno</h2>
+        <p>Retorna el identificador del artefacto cuando la captura se registra
+        correctamente.</p>
         """
         target = driver
         if library:
@@ -76,27 +110,33 @@ class RobotLibrary:
 
     @keyword("Attach Artifact")
     def attach_artifact(self, path: str | Path, description: str | None = None) -> str | None:
-        """Attach an existing local file to the active Evidoc test.
+        """<p>Adjunta un archivo local existente a la prueba activa.</p>
 
-        ``path`` can be absolute or relative to the execution directory.
-        ``description`` is optional supporting context shown in the report.
-        Returns the stored artifact id when the file is accepted.
+        <h2>Argumentos</h2>
+        <ul>
+          <li><b>path</b>: ruta absoluta o relativa al directorio de ejecucion.</li>
+          <li><b>description</b>: contexto opcional que se mostrara en el reporte.</li>
+        </ul>
+
+        <h2>Retorno</h2>
+        <p>Retorna el identificador del artefacto almacenado cuando el archivo se
+        acepta correctamente.</p>
         """
         return api.attach_artifact(path, description)
 
     @keyword("Log Info")
     def log_info(self, message: str) -> None:
-        """Append an informational runtime message to the current step."""
+        """<p>Agrega un mensaje informativo al paso actual.</p>"""
         api.log_info(message)
 
     @keyword("Log Warning")
     def log_warning(self, message: str) -> None:
-        """Append a warning message to the current step."""
+        """<p>Agrega un mensaje de advertencia al paso actual.</p>"""
         api.log_warning(message)
 
     @keyword("Log Error")
     def log_error(self, message: str) -> None:
-        """Append an error message to the current step."""
+        """<p>Agrega un mensaje de error al paso actual.</p>"""
         api.log_error(message)
 
 
