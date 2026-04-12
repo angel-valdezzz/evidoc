@@ -6,6 +6,7 @@ Esta seccion separa el contexto conceptual de la operacion diaria. Si alguien nu
 
 - [Que es Evidoc](que-es-evidoc.md)
 - [Modelo operativo](modelo-operativo.md)
+- [Arquitectura tecnica](arquitectura-tecnica.md)
 - [Perfiles de uso](perfiles-de-uso.md)
 
 </div>
