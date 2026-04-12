@@ -1,16 +1,16 @@
 # Evidoc
 
-Evidoc stores structured test evidence on disk and later generates PDF or DOCX reports.
+Evidoc almacena evidencia de pruebas estructurada en disco y después genera reportes en PDF o DOCX.
 
-## Install
+## Instalacion
 
 ```bash
 poetry install
 ```
 
-## User manual
+## Manual de usuario
 
-Build the technical end-user manual locally:
+Haz el build local del manual tecnico para usuarios finales:
 
 ```bash
 poetry install --with docs
@@ -18,40 +18,40 @@ poetry run mkdocs build
 poetry run evidoc docs manual
 ```
 
-`evidoc docs manual` opens the offline MkDocs site bundled in the installed package. The static site is stored under `evidoc/resources/docs/site` so it can be shipped inside the built wheel.
+`evidoc docs manual` abre el sitio offline de MkDocs incluido en el paquete instalado. El sitio estatico se almacena en `evidoc/resources/docs/site` para poder distribuirlo dentro del `wheel` generado.
 
 ## Tests
 
-The test suite is split into two layers:
+La suite de tests se divide en dos capas:
 
-- Unit tests in `tests/unit` for domain rules, runtime services, and the framework-agnostic API layer.
-- Acceptance tests in `tests/acceptance` using Gherkin/Cucumber-style scenarios executed with `pytest-bdd`.
+- Unit tests en `tests/unit` para reglas de dominio, servicios de runtime y la capa de API agnostica al framework.
+- Acceptance tests en `tests/acceptance` usando escenarios estilo Gherkin/Cucumber ejecutados con `pytest-bdd`.
 
-Install the test dependencies:
+Instala las dependencias de testing:
 
 ```bash
 poetry install --with test,acceptance
 ```
 
-Run the unit suite:
+Ejecuta la suite unitaria:
 
 ```bash
 poetry run pytest tests/unit -m unit
 ```
 
-Run the acceptance suite:
+Ejecuta la suite de acceptance:
 
 ```bash
 poetry run pytest tests/acceptance -m acceptance
 ```
 
-Run everything with coverage:
+Ejecuta todo con coverage:
 
 ```bash
 poetry run pytest --cov=evidoc
 ```
 
-## Generate reports
+## Generar reportes
 
 ```bash
 poetry run evidoc generate --source_dir ./results --output_dir ./reports --mode run --format pdf
@@ -65,13 +65,14 @@ robot --listener evidoc.listener --pythonpath . path/to/tests.robot
 ```
 
 Import the keyword library from Robot:
+Importa la libreria de keywords desde Robot:
 
 ```robot
 *** Settings ***
 Library    evidoc.robot
 ```
 
-Minimal example:
+Ejemplo minimo:
 
 ```robot
 *** Settings ***
@@ -84,4 +85,4 @@ Capture Evidence
     Attach Artifact    ${CURDIR}${/}sample.txt    Input data
 ```
 
-An executable end-to-end example with a demo screenshot driver lives at `examples/robot/evidoc_example.robot`.
+Un ejemplo ejecutable end-to-end con un driver demo para screenshots se encuentra en `examples/robot/evidoc_example.robot`.
