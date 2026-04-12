@@ -40,7 +40,7 @@ Los campos de origen y destino siguen aceptando texto manual, pero ahora tambien
 
 ## Responsive
 
-La aplicacion abre siempre en `Bienvenida`. Cuando el ancho disponible baja, la TUI apila el formulario y el panel de resumen para evitar cortes de informacion y mantener visibles los campos principales.
+La aplicacion abre siempre en `Bienvenida`. La implementacion usa `TabbedContent` como contenedor principal, con el contenido de cada tab ocupando el area completa disponible debajo de la barra de tabs. Cuando el ancho disponible baja, la TUI apila el formulario y el panel de resumen para evitar cortes de informacion y mantener visibles los campos principales.
 
 ## Flujo recomendado
 

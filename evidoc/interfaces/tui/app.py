@@ -1,14 +1,24 @@
 from __future__ import annotations
 
+import subprocess
+import sys
+import threading
 from pathlib import Path
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Container, Vertical, VerticalScroll
+from textual.containers import Container, Horizontal, ScrollableContainer, Vertical
 from textual.events import Resize
-from textual.widgets import Button, ContentSwitcher, Footer, Header, Input, Label, Select, Static, Tab, Tabs
+from textual.widgets import Button, Footer, Header, Input, Label, Select, Static, TabbedContent, TabPane
 
 from evidoc.infrastructure.bootstrap import build_generate_use_case
+
+
+WELCOME_ART = r"""
+ _______  _     _  _____  ______   _______  _______
+ |______  |     |   |    |     \  |       | |
+ |______  \_____/ __|__  |_____/  |_____  |_|_____
+"""
 
 
 class EvidocTui(App[None]):
@@ -28,245 +38,207 @@ class EvidocTui(App[None]):
         layout: vertical;
     }
 
-    #shell {
-        width: 1fr;
-        height: 1fr;
-        padding: 1 2;
+    Header {
+        background: $boost;
     }
 
-    #hero {
-        margin-bottom: 1;
-    }
-
-    #hero_title {
-        text-style: bold;
-    }
-
-    #hero_copy {
-        color: $text-muted;
-    }
-
-    #main_tabs {
-        height: auto;
-        margin-bottom: 1;
-    }
-
-    #main_content {
+    TabbedContent {
         height: 1fr;
     }
 
-    #main_content > .tab-screen {
+    TabPane {
         padding: 0;
     }
 
-    #welcome_scroll,
-    #operation_scroll {
+    ScrollableContainer {
         height: 1fr;
-        width: 1fr;
-    }
-
-    #workspace_body {
-        layout: horizontal;
-        width: 1fr;
-        height: auto;
-    }
-
-    #workspace_body.-narrow {
-        layout: vertical;
     }
 
     .panel {
-        width: 1fr;
         height: auto;
-        padding: 1 2;
         border: ascii $primary;
+        padding: 1 2;
+        margin: 1 2;
     }
 
-    #form_panel {
-        width: 2fr;
-        margin-right: 1;
-    }
-
-    #form_panel.-stack {
-        margin-right: 0;
-        margin-bottom: 1;
-    }
-
-    #summary_panel {
-        width: 1fr;
-    }
-
-    .section_title {
+    .panel-title {
         text-style: bold;
         margin-bottom: 1;
     }
 
-    .field {
-        margin-bottom: 1;
-    }
-
-    .field Label {
-        margin-bottom: 1;
-    }
-
-    .path_row {
+    .field-row {
         layout: horizontal;
-        width: 1fr;
-        height: 3;
-        align: left middle;
-    }
-
-    .path_row.-stack {
-        layout: vertical;
         height: auto;
-    }
-
-    .path_input {
-        width: 1fr;
-        margin-right: 1;
-        height: 3;
-    }
-
-    .path_row.-stack .path_input {
-        margin-right: 0;
         margin-bottom: 1;
     }
 
-    .browse_button {
-        width: 16;
-        min-width: 16;
-        height: 3;
+    .field-label {
+        width: 24;
+        padding-top: 1;
+        text-style: bold;
+    }
+
+    .field-input {
+        width: 1fr;
+        border: ascii $surface;
+    }
+
+    .field-input:focus {
+        border: ascii $primary;
+    }
+
+    .browse-btn {
+        width: 14;
+        min-width: 14;
+        margin-left: 1;
     }
 
     .hint {
         color: $text-muted;
-        margin-top: 1;
+        margin: 0 0 1 24;
     }
 
-    Select,
-    Input,
-    Button {
+    .btn-row {
+        height: auto;
+        margin: 1 2;
+    }
+
+    .btn-row Button {
         width: 1fr;
-        height: 3;
-        border: ascii $surface;
     }
 
-    Select:focus,
-    Input:focus,
-    Button:focus {
-        border: ascii $primary;
+    #welcome-shell {
+        align: center top;
+        height: auto;
+        margin: 1 2;
     }
 
-    #generate {
+    #welcome-art {
         width: 100%;
+        text-align: center;
+        content-align: center middle;
+        text-style: bold;
+        margin-bottom: 1;
+    }
+
+    #welcome-copy {
+        width: 100%;
+        content-align: center middle;
+        color: $text-muted;
+        margin-bottom: 1;
+    }
+
+    #welcome-actions,
+    #welcome-notes {
+        width: 100%;
+    }
+
+    #workspace {
+        layout: horizontal;
+        height: auto;
+    }
+
+    #workspace.-narrow {
+        layout: vertical;
+    }
+
+    #form-panel {
+        width: 2fr;
+    }
+
+    #summary-panel {
+        width: 1fr;
+    }
+
+    #workspace.-narrow #form-panel,
+    #workspace.-narrow #summary-panel {
+        width: 1fr;
+    }
+
+    #workspace.-narrow .field-row {
+        layout: vertical;
+        margin-bottom: 2;
+    }
+
+    #workspace.-narrow .field-label {
+        width: 100%;
+        padding-top: 0;
+    }
+
+    #workspace.-narrow .hint {
+        margin-left: 0;
+    }
+
+    #workspace.-narrow .browse-btn {
+        width: 1fr;
+        margin-left: 0;
         margin-top: 1;
     }
 
     #status {
         margin-top: 1;
+        border: ascii $surface;
         padding: 1;
-        border: ascii $surface-lighten-1;
-    }
-
-    #welcome_panel {
-        padding: 1 2;
-    }
-
-    #ascii_art {
-        text-style: bold;
-        margin-bottom: 1;
-    }
-
-    #welcome_copy {
-        color: $text-muted;
-        margin-bottom: 1;
     }
     """
 
     def compose(self) -> ComposeResult:
         yield Header()
-        with Container(id="shell"):
-            with Vertical(id="hero"):
-                yield Static("Evidence operations console", id="hero_title")
-                yield Static(
-                    "Configure the input folders and output format before generating the final evidence package. ASCII layout mode keeps the interface stable in basic Windows CMD.",
-                    id="hero_copy",
-                )
-            yield Tabs(
-                Tab("Bienvenida", id="tab-welcome"),
-                Tab("Operacion", id="tab-operation"),
-                id="main_tabs",
-                active="tab-welcome",
-            )
-            with ContentSwitcher(initial="welcome", id="main_content"):
-                with VerticalScroll(id="welcome", classes="tab-screen welcome-screen"):
-                    with Vertical(classes="panel", id="welcome_panel"):
-                        yield Static(
-                            r"""
-  ________   ___      ___   ________   ________   ________
- |\   ____\ |\  \    /  /| |\   ___  \|\   ___  \|\   ____\
- \ \  \___| \ \  \  /  / / \ \  \\ \  \ \  \\ \  \ \  \___|
-  \ \  \     \ \  \/  / /   \ \  \\ \  \ \  \\ \  \ \  \
-   \ \  \____ \ \    / /     \ \  \\ \  \ \  \\ \  \ \  \____
-    \ \_______\\ \__/ /       \ \__\\ \__\ \__\\ \__\ \_______\
-     \|_______| \|__|/         \|__| \|__|\|__| \|__|\|_______|
-                            """.strip("\n"),
-                            id="ascii_art",
-                        )
+        with TabbedContent(initial="welcome", id="tabs"):
+            with TabPane("Bienvenida", id="welcome"):
+                with ScrollableContainer():
+                    with Vertical(id="welcome-shell"):
+                        yield Static(WELCOME_ART.strip("\n"), id="welcome-art")
                         yield Static(
                             "Welcome to Evidoc. This console helps operators turn execution artifacts into stakeholder-ready evidence reports.",
-                            id="welcome_copy",
+                            id="welcome-copy",
                         )
-                        yield Static("Quick start", classes="section_title")
-                        yield Static("1. Press F2 to open Operacion.")
-                        yield Static("2. Use Ctrl+S and Ctrl+O to pick the source and output folders.")
-                        yield Static("3. Adjust format and mode according to the reporting target.")
-                        yield Static("4. Press Ctrl+G or activate Generate report to run the process.")
-                with VerticalScroll(id="operation", classes="tab-screen operation-screen"):
-                    with Container(id="workspace_body"):
-                        with Vertical(classes="panel", id="form_panel"):
-                            yield Static("Report setup", classes="section_title")
-                            with Vertical(classes="field"):
-                                yield Label("Source directory")
-                                with Container(classes="path_row", id="source_path_row"):
-                                    yield Input(
-                                        value="./results",
-                                        id="source_dir",
-                                        placeholder="Example: ./results",
-                                        classes="path_input",
-                                    )
-                                    yield Button("Browse", id="browse_source", classes="browse_button")
-                            with Vertical(classes="field"):
-                                yield Label("Output directory")
-                                with Container(classes="path_row", id="output_path_row"):
-                                    yield Input(
-                                        value="./reports",
-                                        id="output_dir",
-                                        placeholder="Example: ./reports",
-                                        classes="path_input",
-                                    )
-                                    yield Button("Browse", id="browse_output", classes="browse_button")
-                            with Vertical(classes="field"):
-                                yield Label("Output format")
+                        with Container(classes="panel", id="welcome-actions"):
+                            yield Static("Quick start", classes="panel-title")
+                            yield Static("1. Press F2 to open Operacion.")
+                            yield Static("2. Use Ctrl+S and Ctrl+O to pick the source and output folders.")
+                            yield Static("3. Adjust format and mode according to the reporting target.")
+                            yield Static("4. Press Ctrl+G or activate Generate report to run the process.")
+                        with Container(classes="panel", id="welcome-notes"):
+                            yield Static("Design notes", classes="panel-title")
+                            yield Static("The TUI opens in Bienvenida by default.")
+                            yield Static("The content area uses the full available space under the tabs.")
+                            yield Static("The Operacion tab becomes vertical on smaller CMD windows.")
+            with TabPane("Operacion", id="operation"):
+                with ScrollableContainer():
+                    with Container(id="workspace"):
+                        with Vertical(classes="panel", id="form-panel"):
+                            yield Static("Report setup", classes="panel-title")
+                            with Horizontal(classes="field-row"):
+                                yield Label("Source directory", classes="field-label")
+                                yield Input(value="./results", id="source_dir", classes="field-input")
+                                yield Button("Browse", id="browse_source", classes="browse-btn")
+                            with Horizontal(classes="field-row"):
+                                yield Label("Output directory", classes="field-label")
+                                yield Input(value="./reports", id="output_dir", classes="field-input")
+                                yield Button("Browse", id="browse_output", classes="browse-btn")
+                            with Horizontal(classes="field-row"):
+                                yield Label("Output format", classes="field-label")
                                 yield Select([("PDF report", "pdf"), ("DOCX report", "docx")], value="pdf", id="format")
-                            with Vertical(classes="field"):
-                                yield Label("Execution mode")
+                            with Horizontal(classes="field-row"):
+                                yield Label("Execution mode", classes="field-label")
                                 yield Select(
                                     [("Complete run", "run"), ("Single result", "single")],
                                     value="run",
                                     id="mode",
                                 )
                             yield Static(
-                                "Shortcuts: F1 welcome, F2 operation, Ctrl+S source folder, Ctrl+O output folder, Ctrl+G generate.",
+                                "Shortcuts: F1 bienvenida, F2 operacion, Ctrl+S source folder, Ctrl+O output folder, Ctrl+G generate.",
                                 classes="hint",
                             )
                             yield Static(
                                 "Use complete run for batch execution or single result when you only need one evidence set.",
                                 classes="hint",
                             )
-                            yield Button("Generate report", id="generate", variant="primary")
-                        with Vertical(classes="panel", id="summary_panel"):
-                            yield Static("Operator checklist", classes="section_title")
+                            with Horizontal(classes="btn-row"):
+                                yield Button("Generate report", id="generate", variant="primary")
+                        with Vertical(classes="panel", id="summary-panel"):
+                            yield Static("Operator checklist", classes="panel-title")
                             yield Static("1. Confirm the source folder contains execution artifacts.")
                             yield Static("2. Choose the target folder where the report should be written.")
                             yield Static("3. Select the format required by the stakeholder.")
@@ -275,7 +247,7 @@ class EvidocTui(App[None]):
         yield Footer()
 
     def on_mount(self) -> None:
-        self._set_active_tab("welcome")
+        self.action_show_welcome()
         self._sync_layout()
 
     def on_resize(self, event: Resize) -> None:
@@ -284,42 +256,36 @@ class EvidocTui(App[None]):
     def _sync_layout(self) -> None:
         if not self.is_mounted:
             return
-        narrow = self.size.width < 150
-        self.query_one("#workspace_body").set_class(narrow, "-narrow")
-        self.query_one("#source_path_row").set_class(narrow, "-stack")
-        self.query_one("#output_path_row").set_class(narrow, "-stack")
-        self.query_one("#form_panel").set_class(narrow, "-stack")
+        narrow = self.size.width <= 110
+        self.query_one("#workspace").set_class(narrow, "-narrow")
 
-    def _set_active_tab(self, tab_id: str) -> None:
-        tab_widget_id = "tab-welcome" if tab_id == "welcome" else "tab-operation"
-        self.query_one("#main_tabs", Tabs).active = tab_widget_id
-        self.query_one("#main_content", ContentSwitcher).current = tab_id
-
-    def _pick_directory(self, title: str) -> str | None:
-        try:
-            from tkinter import Tk, filedialog
-        except ImportError:
-            self.notify("File dialog is not available in this environment.", severity="error")
+    def _open_picker_in_subprocess(self, mode: str, title: str) -> str | None:
+        if mode == "directory":
+            code = (
+                "import tkinter as tk; from tkinter import filedialog; "
+                "root=tk.Tk(); root.withdraw(); root.attributes('-topmost', True); "
+                f"print(filedialog.askdirectory(title={title!r}))"
+            )
+        else:
             return None
-
-        root = Tk()
-        root.withdraw()
-        root.attributes("-topmost", True)
-        root.update()
-        try:
-            selected = filedialog.askdirectory(title=title)
-        finally:
-            root.destroy()
-        return selected or None
+        result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=False)
+        value = result.stdout.strip()
+        return value or None
 
     def _browse_into_input(self, input_id: str, title: str) -> None:
-        selected_path = self._pick_directory(title)
-        if selected_path:
-            self.query_one(f"#{input_id}", Input).value = selected_path
-            self.notify(f"Selected: {selected_path}")
+        def pick() -> None:
+            selected = self._open_picker_in_subprocess("directory", title)
+            if selected:
+                self.call_from_thread(self._apply_selected_path, input_id, selected)
+
+        threading.Thread(target=pick, daemon=True).start()
+
+    def _apply_selected_path(self, input_id: str, value: str) -> None:
+        self.query_one(f"#{input_id}", Input).value = value
+        self.notify(f"Selected: {value}")
 
     def _run_generation(self) -> None:
-        self._set_active_tab("operation")
+        self.action_show_operation()
         self.query_one("#status", Static).update("Generating report. Please wait...")
         source_dir = Path(self.query_one("#source_dir", Input).value)
         output_dir = Path(self.query_one("#output_dir", Input).value)
@@ -340,17 +306,17 @@ class EvidocTui(App[None]):
         self.notify(message)
 
     def action_show_welcome(self) -> None:
-        self._set_active_tab("welcome")
+        self.query_one("#tabs", TabbedContent).active = "welcome"
 
     def action_show_operation(self) -> None:
-        self._set_active_tab("operation")
+        self.query_one("#tabs", TabbedContent).active = "operation"
 
     def action_browse_source(self) -> None:
-        self._set_active_tab("operation")
+        self.action_show_operation()
         self._browse_into_input("source_dir", "Select the source directory")
 
     def action_browse_output(self) -> None:
-        self._set_active_tab("operation")
+        self.action_show_operation()
         self._browse_into_input("output_dir", "Select the output directory")
 
     def action_generate_report(self) -> None:
@@ -365,7 +331,3 @@ class EvidocTui(App[None]):
             return
         if event.button.id == "generate":
             self._run_generation()
-
-    def on_tabs_tab_activated(self, event: Tabs.TabActivated) -> None:
-        content_id = "welcome" if event.tab.id == "tab-welcome" else "operation"
-        self.query_one("#main_content", ContentSwitcher).current = content_id
