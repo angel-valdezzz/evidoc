@@ -1,0 +1,121 @@
+site_name: Evidoc Docs
+site_description: Manual tecnico para usuarios finales de Evidoc.
+site_url: https://evidoc.local/docs
+repo_name: evidoc
+repo_url: https://evidoc.local/repo
+
+theme:
+  name: material
+  language: es
+  favicon: assets/images/favicon.svg
+  logo: assets/images/logo-mark.svg
+  palette:
+    - scheme: default
+      primary: teal
+      accent: amber
+      toggle:
+        icon: material/weather-night
+        name: Cambiar a modo oscuro
+    - scheme: slate
+      primary: teal
+      accent: amber
+      toggle:
+        icon: material/weather-sunny
+        name: Cambiar a modo claro
+  font:
+    text: IBM Plex Sans
+    code: IBM Plex Mono
+  features:
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.sections
+    - navigation.tabs
+    - navigation.top
+    - navigation.path
+    - navigation.indexes
+    - navigation.footer
+    - toc.follow
+    - search.highlight
+    - search.share
+    - search.suggest
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - content.tooltips
+
+plugins:
+  - search:
+      lang: es
+  - glightbox
+  - section-index
+  - minify:
+      minify_html: true
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+extra:
+  social:
+    - icon: material/file-document-multiple-outline
+      link: guias/cli/
+      name: CLI
+    - icon: material/robot-outline
+      link: guias/robot-framework/
+      name: Robot Framework
+    - icon: material/application-brackets-outline
+      link: guias/python-api/
+      name: Python API
+
+extra_css:
+  - assets/stylesheets/extra.css
+
+nav:
+  - Inicio: index.md
+  - Panorama:
+      - panorama/index.md
+      - Que Es Evidoc: panorama/que-es-evidoc.md
+      - Modelo Operativo: panorama/modelo-operativo.md
+      - Perfiles De Uso: panorama/perfiles-de-uso.md
+  - Primeros Pasos:
+      - primeros-pasos/index.md
+      - Instalacion: primeros-pasos/instalacion.md
+      - Recorrido Guiado: primeros-pasos/recorrido-guiado.md
+      - Configuracion Basica: primeros-pasos/configuracion-basica.md
+  - Guias Tecnicas:
+      - guias/index.md
+      - CLI: guias/cli.md
+      - TUI: guias/tui.md
+      - Python API: guias/python-api.md
+      - Robot Framework: guias/robot-framework.md
+      - Reportes Y Salidas: guias/reportes-y-salidas.md
+  - Referencia:
+      - referencia/index.md
+      - Estructura De Resultados: referencia/estructura-de-resultados.md
+      - Comandos Y Keywords: referencia/comandos-y-keywords.md
+      - Estados Y Convenciones: referencia/estados-y-convenciones.md
+  - Operacion:
+      - operacion/index.md
+      - Buenas Practicas: operacion/buenas-practicas.md
+      - Troubleshooting: operacion/troubleshooting.md

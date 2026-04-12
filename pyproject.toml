@@ -22,6 +22,13 @@ pytest-cov = "^6.1.1"
 [tool.poetry.group.acceptance.dependencies]
 pytest-bdd = "^8.1.0"
 
+
+[tool.poetry.group.docs.dependencies]
+mkdocs-material = "^9.7.6"
+mkdocs-glightbox = "^0.5.2"
+mkdocs-section-index = "^0.3.11"
+mkdocs-minify-plugin = "^0.8.0"
+
 [tool.poetry.scripts]
 evidoc = "evidoc.interfaces.cli.main:app"
 

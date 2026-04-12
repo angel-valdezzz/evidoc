@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 560" role="img" aria-labelledby="title desc">
+  <title id="title">Flujo operativo de Evidoc</title>
+  <desc id="desc">Diagrama con cuatro bloques: ejecucion de prueba, captura de evidencia, resultados estructurados y reporte final.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#e0f2f1"/>
+      <stop offset="100%" stop-color="#fff8e1"/>
+    </linearGradient>
+  </defs>
+  <rect width="980" height="560" rx="32" fill="url(#bg)"/>
+  <g font-family="IBM Plex Sans, Arial, sans-serif">
+    <rect x="50" y="170" width="190" height="160" rx="24" fill="#004d40"/>
+    <text x="145" y="225" fill="#fff" font-size="26" text-anchor="middle">1. Prueba</text>
+    <text x="145" y="260" fill="#b2dfdb" font-size="18" text-anchor="middle">Robot, Python</text>
+    <text x="145" y="288" fill="#b2dfdb" font-size="18" text-anchor="middle">o framework propio</text>
+    <rect x="285" y="140" width="190" height="220" rx="24" fill="#00695c"/>
+    <text x="380" y="200" fill="#fff" font-size="26" text-anchor="middle">2. Captura</text>
+    <text x="380" y="238" fill="#d7fff8" font-size="18" text-anchor="middle">Pasos</text>
+    <text x="380" y="268" fill="#d7fff8" font-size="18" text-anchor="middle">Logs</text>
+    <text x="380" y="298" fill="#d7fff8" font-size="18" text-anchor="middle">Screenshots</text>
+    <text x="380" y="328" fill="#d7fff8" font-size="18" text-anchor="middle">Archivos</text>
+    <rect x="520" y="170" width="190" height="160" rx="24" fill="#00897b"/>
+    <text x="615" y="225" fill="#fff" font-size="26" text-anchor="middle">3. Resultado</text>
+    <text x="615" y="260" fill="#e0f7fa" font-size="18" text-anchor="middle">JSON + artifacts/</text>
+    <text x="615" y="288" fill="#e0f7fa" font-size="18" text-anchor="middle">versionable y auditable</text>
+    <rect x="755" y="170" width="175" height="160" rx="24" fill="#f9a825"/>
+    <text x="842.5" y="225" fill="#1f1a00" font-size="26" text-anchor="middle">4. Reporte</text>
+    <text x="842.5" y="260" fill="#403300" font-size="18" text-anchor="middle">PDF o DOCX</text>
+    <text x="842.5" y="288" fill="#403300" font-size="18" text-anchor="middle">listo para compartir</text>
+    <path d="M240 250h35" stroke="#004d40" stroke-width="10" stroke-linecap="round"/>
+    <polygon points="287,250 264,235 264,265" fill="#004d40"/>
+    <path d="M475 250h35" stroke="#00695c" stroke-width="10" stroke-linecap="round"/>
+    <polygon points="522,250 499,235 499,265" fill="#00695c"/>
+    <path d="M710 250h30" stroke="#00897b" stroke-width="10" stroke-linecap="round"/>
+    <polygon points="752,250 729,235 729,265" fill="#00897b"/>
+  </g>
+</svg>
