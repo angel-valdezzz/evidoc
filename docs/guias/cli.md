@@ -21,7 +21,16 @@ poetry run evidoc generate --source_dir .\results --output_dir .\reports --mode 
 
 ## Documentacion integrada
 
-Evidoc distribuye una referencia local de keywords de Robot Framework generada con `libdoc`.
+Evidoc distribuye dos recursos de documentacion offline dentro de la instalacion local:
+
+- El manual tecnico generado con MkDocs.
+- La referencia de keywords de Robot Framework generada con `libdoc`.
+
+```bash
+poetry run evidoc docs manual
+```
+
+Ese comando abre la portada del manual offline empaquetado dentro del `wheel`, por lo que sigue disponible despues de `pip install evidoc-...whl` sin depender de un servidor o despliegue web.
 
 ```bash
 poetry run evidoc docs robot-library
@@ -29,6 +38,7 @@ poetry run evidoc docs robot-library
 
 ## Resultado esperado
 
+- `evidoc docs manual` abre el `index.html` del sitio estatico generado con MkDocs y empaquetado dentro de la instalacion local.
 - El comando abre el archivo HTML empaquetado dentro de la instalacion local de Evidoc.
 - Ese mismo archivo viaja dentro del wheel, por lo que tambien funciona despues de `pip install evidoc-...whl`.
 
@@ -56,6 +66,7 @@ poetry run evidoc docs robot-library
 
 - Si no encuentra resultados, imprime `No results found.`
 - Si genera salidas, imprime la ruta de cada archivo creado.
+- Si abres `docs manual`, imprime la ruta del `index.html` abierto para facilitar soporte y troubleshooting.
 - Si abres `docs robot-library`, imprime la ruta del HTML abierto para facilitar soporte y troubleshooting.
 - Los argumentos pasados tienen prioridad sobre `evidoc.json` o `evidoc.toml`.
 

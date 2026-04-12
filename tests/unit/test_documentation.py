@@ -11,6 +11,15 @@ pytestmark = pytest.mark.unit
 
 def test_available_documents_lists_robot_library() -> None:
     assert "robot-library" in available_documents()
+    assert "manual" in available_documents()
+
+
+def test_resolve_document_path_returns_bundled_manual_index() -> None:
+    path = resolve_document_path("manual")
+
+    assert isinstance(path, Path)
+    assert path.exists()
+    assert path.name == "index.html"
 
 
 def test_resolve_document_path_returns_bundled_robot_libdoc() -> None:

@@ -1,0 +1,59 @@
+:root {
+  --evidoc-surface: linear-gradient(135deg, rgba(0, 121, 107, 0.16), rgba(255, 193, 7, 0.18));
+  --evidoc-border: rgba(0, 121, 107, 0.25);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 2rem;
+  align-items: center;
+  padding: 1.5rem;
+  border: 1px solid var(--evidoc-border);
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(circle at top right, rgba(255, 193, 7, 0.18), transparent 35%),
+    radial-gradient(circle at bottom left, rgba(0, 121, 107, 0.22), transparent 30%),
+    var(--evidoc-surface);
+  margin-bottom: 1.5rem;
+}
+
+.hero h1 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  line-height: 1.1;
+}
+
+.hero-copy {
+  font-size: 1.05rem;
+  max-width: 40rem;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: var(--md-primary-fg-color);
+}
+
+.hero-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.grid.cards > ul > li,
+.md-typeset .grid.cards > ul > li {
+  border-radius: 1rem;
+}
+
+.md-typeset img {
+  border-radius: 0.9rem;
+}
+
+@media screen and (max-width: 76.2344em) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+}
