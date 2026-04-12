@@ -9,8 +9,8 @@
       almacenado en disco y convertirlo en reportes PDF o DOCX con una narrativa clara.
     </p>
     <div class="hero-actions">
-      <a class="md-button md-button--primary" href="primeros-pasos/instalacion/">Empezar instalacion</a>
-      <a class="md-button" href="guias/">Ir a las guias tecnicas</a>
+      <a class="md-button md-button--primary" href="primeros-pasos/instalacion.html">Empezar instalacion</a>
+      <a class="md-button" href="guias/index.html">Ir a las guias tecnicas</a>
     </div>
   </div>
   <a href="assets/images/evidoc-flow.svg">

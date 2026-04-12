@@ -17,6 +17,12 @@ poetry run evidoc docs robot-library
 
 Ese comando abre el HTML empaquetado con el wheel instalado localmente.
 
+Si necesitas el manual tecnico completo sin levantar `mkdocs serve`, usa:
+
+```bash
+poetry run evidoc docs manual
+```
+
 ## Configuracion minima
 
 ```bash

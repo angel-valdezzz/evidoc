@@ -5,8 +5,11 @@
 ```bash
 poetry run evidoc generate [--source_dir PATH] [--output_dir PATH] [--mode run|single] [--format pdf|docx]
 poetry run evidoc tui
+poetry run evidoc docs manual
 poetry run evidoc docs robot-library
 ```
+
+`evidoc docs manual` abre el manual offline generado con MkDocs y empaquetado dentro del `wheel` instalado localmente.
 
 `evidoc docs robot-library` abre la referencia HTML de la libreria `evidoc.robot` generada con `libdoc` y empaquetada dentro de la distribucion instalada.
 

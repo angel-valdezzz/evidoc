@@ -13,7 +13,8 @@ from pathlib import Path
 
 _DOCS_ROOT = ("resources", "docs")
 _BUNDLED_DOCS = {
-    "robot-library": "robot-library.html",
+    "manual": ("site", "index.html"),
+    "robot-library": ("robot-library.html",),
 }
 
 
@@ -21,6 +22,34 @@ def available_documents() -> tuple[str, ...]:
     """Return the public documentation identifiers exposed by the CLI."""
 
     return tuple(sorted(_BUNDLED_DOCS))
+
+
+def _copy_traversable_to_path(source, destination: Path) -> None:
+    if source.is_dir():
+        destination.mkdir(parents=True, exist_ok=True)
+        for child in source.iterdir():
+            _copy_traversable_to_path(child, destination / child.name)
+        return
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with source.open("rb") as source_file, destination.open("wb") as target_file:
+        shutil.copyfileobj(source_file, target_file)
+
+
+def _resource_path(*segments: str) -> Path:
+    traversable = resources.files("evidoc")
+    for segment in (*_DOCS_ROOT, *segments):
+        traversable = traversable.joinpath(segment)
+
+    if isinstance(traversable, Path):
+        return traversable
+
+    temp_root = Path(tempfile.gettempdir()) / "evidoc-docs"
+    copy_root = temp_root / Path(*segments[:-1]) if len(segments) > 1 else temp_root
+    if copy_root.exists():
+        shutil.rmtree(copy_root)
+    _copy_traversable_to_path(traversable if len(segments) == 1 else traversable.parent, copy_root)
+    return copy_root / segments[-1]
 
 
 def resolve_document_path(name: str) -> Path:
@@ -31,24 +60,10 @@ def resolve_document_path(name: str) -> Path:
     non-filesystem loader.
     """
 
-    filename = _BUNDLED_DOCS.get(name)
-    if filename is None:
+    resource_segments = _BUNDLED_DOCS.get(name)
+    if resource_segments is None:
         raise ValueError(f"Unknown bundled document '{name}'.")
-
-    traversable = resources.files("evidoc")
-    for segment in (*_DOCS_ROOT, filename):
-        traversable = traversable.joinpath(segment)
-
-    if isinstance(traversable, Path):
-        return traversable
-
-    suffix = Path(filename).suffix
-    temp_root = Path(tempfile.gettempdir()) / "evidoc-docs"
-    temp_root.mkdir(parents=True, exist_ok=True)
-    destination = temp_root / f"{name}{suffix}"
-    with traversable.open("rb") as source, destination.open("wb") as target:
-        shutil.copyfileobj(source, target)
-    return destination
+    return _resource_path(*resource_segments)
 
 
 def open_documentation(name: str) -> Path:

@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1360" role="img" aria-labelledby="title desc">
+  <title id="title">Flujo principal de Evidoc</title>
+  <desc id="desc">Diagrama de flujo desde la captura de evidencia hasta la generacion del reporte final.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f0fdfa"/>
+      <stop offset="100%" stop-color="#fefce8"/>
+    </linearGradient>
+    <style>
+      text { font-family: IBM Plex Sans, Arial, sans-serif; fill: #062925; }
+      .title { font-size: 30px; font-weight: 700; }
+      .step { fill: #ffffff; stroke: #0f766e; stroke-width: 3; rx: 22; }
+      .step-text { font-size: 22px; text-anchor: middle; }
+      .decision { fill: #fef3c7; stroke: #d97706; stroke-width: 3; }
+      .decision-text { font-size: 20px; text-anchor: middle; }
+      .arrow { stroke: #0f766e; stroke-width: 4; fill: none; marker-end: url(#arrow); }
+      .label { font-size: 17px; fill: #92400e; font-weight: 700; }
+      .terminal { fill: #115e59; stroke: #115e59; }
+      .terminal-text { font-size: 22px; fill: #ffffff; text-anchor: middle; font-weight: 700; }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0f766e"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="1360" rx="30" fill="url(#bg)"/>
+  <text x="500" y="56" text-anchor="middle" class="title">Evidoc - Flujo principal</text>
+
+  <ellipse cx="500" cy="108" rx="120" ry="34" class="terminal"/>
+  <text x="500" y="116" class="terminal-text">Inicio</text>
+
+  <rect x="250" y="170" width="500" height="82" class="step"/>
+  <text x="500" y="205" class="step-text">CLI, TUI, Python API o Robot</text>
+  <text x="500" y="233" class="step-text">invocan el flujo de Evidoc</text>
+
+  <rect x="250" y="298" width="500" height="82" class="step"/>
+  <text x="500" y="333" class="step-text">Se crea o reutiliza run_id</text>
+  <text x="500" y="361" class="step-text">y se abre contexto de prueba</text>
+
+  <rect x="250" y="426" width="500" height="82" class="step"/>
+  <text x="500" y="461" class="step-text">Se registran pasos, logs</text>
+  <text x="500" y="489" class="step-text">y adjuntos durante la ejecucion</text>
+
+  <polygon points="500,558 650,648 500,738 350,648" class="decision"/>
+  <text x="500" y="640" class="decision-text">Hay evidencias</text>
+  <text x="500" y="667" class="decision-text">para almacenar?</text>
+
+  <rect x="250" y="790" width="500" height="82" class="step"/>
+  <text x="500" y="825" class="step-text">Screenshots y archivos</text>
+  <text x="500" y="853" class="step-text">se guardan en artifacts/</text>
+
+  <rect x="250" y="918" width="500" height="82" class="step"/>
+  <text x="500" y="953" class="step-text">Se construye el resultado JSON</text>
+  <text x="500" y="981" class="step-text">con steps, artifacts y metadatos</text>
+
+  <rect x="250" y="1046" width="500" height="82" class="step"/>
+  <text x="500" y="1081" class="step-text">El resultado se persiste en disco</text>
+  <text x="500" y="1109" class="step-text">bajo run-&lt;id&gt;/test-&lt;id&gt;/</text>
+
+  <polygon points="500,1178 650,1268 500,1358 350,1268" class="decision"/>
+  <text x="500" y="1260" class="decision-text">Generacion posterior:</text>
+  <text x="500" y="1287" class="decision-text">single o run</text>
+
+  <path d="M500 142 L500 170" class="arrow"/>
+  <path d="M500 252 L500 298" class="arrow"/>
+  <path d="M500 380 L500 426" class="arrow"/>
+  <path d="M500 508 L500 558" class="arrow"/>
+  <path d="M500 738 L500 790" class="arrow"/>
+  <path d="M500 872 L500 918" class="arrow"/>
+  <path d="M500 1000 L500 1046" class="arrow"/>
+  <path d="M500 1128 L500 1178" class="arrow"/>
+
+  <text x="665" y="636" class="label">si</text>
+  <text x="670" y="1260" class="label">single</text>
+  <text x="278" y="1260" class="label">run</text>
+</svg>
