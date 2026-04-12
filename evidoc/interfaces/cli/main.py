@@ -26,6 +26,12 @@ def generate(
         "--output-dir",
         help="Directory for generated reports.",
     ),
+    format: ReportFormat = typer.Option(
+        ReportFormat.PDF,
+        "--format",
+        case_sensitive=False,
+        help="Report output format.",
+    ),
     mode: GenerateMode = typer.Option(
         GenerateMode.RUN,
         "--mode",
@@ -38,7 +44,7 @@ def generate(
         overrides={
             "source_dir": source_dir,
             "output_dir": output_dir,
-            "format": ReportFormat.PDF.value,
+            "format": format.value,
             "mode": mode.value,
         },
     )

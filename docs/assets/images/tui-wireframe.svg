@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 620" role="img" aria-labelledby="title desc">
+  <title id="title">Wireframe conceptual de la TUI</title>
+  <desc id="desc">Representacion visual de los campos source, output, format, mode y boton generate.</desc>
+  <rect width="980" height="620" rx="26" fill="#102027"/>
+  <g font-family="IBM Plex Mono, monospace">
+    <rect x="50" y="50" width="880" height="60" rx="16" fill="#1e2f36"/>
+    <text x="90" y="88" fill="#cfd8dc" font-size="26">Evidoc</text>
+    <rect x="100" y="160" width="780" height="70" rx="14" fill="#eceff1"/>
+    <text x="130" y="205" fill="#263238" font-size="24">Source directory: ./results</text>
+    <rect x="100" y="260" width="780" height="70" rx="14" fill="#eceff1"/>
+    <text x="130" y="305" fill="#263238" font-size="24">Output directory: ./reports</text>
+    <rect x="100" y="360" width="360" height="70" rx="14" fill="#fff8e1"/>
+    <text x="130" y="405" fill="#6d4c00" font-size="24">format: pdf</text>
+    <rect x="520" y="360" width="360" height="70" rx="14" fill="#e0f2f1"/>
+    <text x="550" y="405" fill="#004d40" font-size="24">mode: run</text>
+    <rect x="350" y="485" width="280" height="78" rx="18" fill="#00a896"/>
+    <text x="490" y="534" fill="#ffffff" font-size="30" text-anchor="middle">Generate</text>
+  </g>
+</svg>

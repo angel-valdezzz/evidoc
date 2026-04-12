@@ -12,6 +12,7 @@ from evidoc.domain.enums import ArtifactType, GenerateMode, ReportFormat, Status
 from evidoc.domain.models import ArtifactRef, LogEntry, StepResult, TestCaseMetadata as CaseMeta, TestResult as ResultModel
 from evidoc.infrastructure.bootstrap import project_root
 from evidoc.infrastructure.filesystem.repository import FilesystemResultRepository
+from evidoc.infrastructure.reporting.docx_renderer import DocxReportRenderer
 from evidoc.infrastructure.reporting.pdf_renderer import PdfReportRenderer
 from evidoc.interfaces.cli.main import app
 
@@ -155,6 +156,29 @@ def test_cli_generate_run_creates_single_combined_pdf(tmp_path: Path) -> None:
     assert outputs[0].name == "run-run_cli.pdf"
 
 
+def test_cli_generate_single_creates_docx_when_requested(tmp_path: Path) -> None:
+    persist_result(tmp_path / "results", build_result(run_id="run_cli_docx", test_id="case_1"))
+
+    result = RUNNER.invoke(
+        app,
+        [
+            "generate",
+            "--source_dir",
+            str(tmp_path / "results"),
+            "--output_dir",
+            str(tmp_path / "reports"),
+            "--mode",
+            "single",
+            "--format",
+            "docx",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    outputs = sorted((tmp_path / "reports").glob("*.docx"))
+    assert len(outputs) == 1
+
+
 def test_pdf_renderer_handles_images_missing_images_and_pagination(tmp_path: Path) -> None:
     source_dir = tmp_path / "results"
     output_dir = tmp_path / "reports"
@@ -190,3 +214,27 @@ def test_generate_report_use_case_still_supports_pdf_output(tmp_path: Path) -> N
     )
 
     assert pdf_outputs[0].exists()
+
+
+def test_generate_report_use_case_supports_docx_output(tmp_path: Path) -> None:
+    persist_result(tmp_path / "results", build_result(run_id="run_use_case_docx", test_id="case_docx"))
+
+    repo = FilesystemResultRepository(project_root() / "schemas" / "result.schema.json")
+    docx_outputs = GenerateReportUseCase(
+        repo,
+        {ReportFormat.DOCX: DocxReportRenderer()},
+    ).execute(
+        type(
+            "Cfg",
+            (),
+            {
+                "source_dir": tmp_path / "results",
+                "output_dir": tmp_path / "reports-docx",
+                "format": ReportFormat.DOCX,
+                "mode": GenerateMode.RUN,
+            },
+        )()
+    )
+
+    assert docx_outputs[0].exists()
+    assert docx_outputs[0].suffix == ".docx"

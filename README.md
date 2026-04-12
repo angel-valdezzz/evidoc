@@ -8,6 +8,15 @@ Evidoc stores structured test evidence on disk and later generates PDF or DOCX r
 poetry install
 ```
 
+## User manual
+
+Build the technical end-user manual locally:
+
+```bash
+poetry install --with docs
+poetry run mkdocs serve
+```
+
 ## Tests
 
 The test suite is split into two layers:
@@ -42,8 +51,8 @@ poetry run pytest --cov=evidoc
 ## Generate reports
 
 ```bash
-poetry run evidoc generate --source_dir ./results --output_dir ./reports --mode run
-poetry run evidoc generate --source_dir ./results --output_dir ./reports --mode single
+poetry run evidoc generate --source_dir ./results --output_dir ./reports --mode run --format pdf
+poetry run evidoc generate --source_dir ./results --output_dir ./reports --mode single --format docx
 ```
 
 ## Robot Framework
