@@ -41,7 +41,8 @@ class EvidocTui(App[None]):
     Header {
         dock: top;
         height: 1;
-        background: $boost;
+        background: $panel-darken-1;
+        color: $text;
     }
 
     TabbedContent {
@@ -50,17 +51,44 @@ class EvidocTui(App[None]):
         height: 1fr;
     }
 
+    Tabs {
+        background: $surface;
+        color: $text-muted;
+        padding: 0 1;
+    }
+
+    Tabs:focus {
+        border: none;
+    }
+
+    Tab {
+        padding: 0 1;
+        margin-right: 1;
+        background: transparent;
+        border: none;
+        color: $text-muted;
+    }
+
+    Tab.-active {
+        background: $primary 20%;
+        color: $text;
+        text-style: bold;
+    }
+
     TabPane {
         padding: 0;
+        background: $surface;
     }
 
     ScrollableContainer {
         height: 1fr;
+        background: $surface;
     }
 
     .panel {
         height: auto;
-        border: ascii $primary;
+        border: none;
+        background: $panel;
         padding: 1 2;
         margin: 1 2;
     }
@@ -68,6 +96,7 @@ class EvidocTui(App[None]):
     .panel-title {
         text-style: bold;
         margin-bottom: 1;
+        color: $text;
     }
 
     .field-row {
@@ -81,16 +110,21 @@ class EvidocTui(App[None]):
         width: 24;
         padding-top: 1;
         text-style: bold;
+        color: $text;
     }
 
     .field-input {
         width: 1fr;
         height: 3;
-        border: ascii $surface;
+        border: none;
+        background: $surface-lighten-1;
+        padding: 0 1;
+        color: $text;
     }
 
     .field-input:focus {
-        border: ascii $primary;
+        background: $surface-lighten-2;
+        tint: $primary 8%;
     }
 
     .browse-btn {
@@ -98,19 +132,57 @@ class EvidocTui(App[None]):
         min-width: 14;
         height: 3;
         margin-left: 1;
+        border: none;
+        background: $surface-lighten-1;
+        color: $text;
     }
 
     Select {
         height: 3;
-        border: ascii $surface;
+        border: none;
+        background: $surface-lighten-1;
+        color: $text;
+        padding: 0 1;
     }
 
     Select:focus {
-        border: ascii $primary;
+        background: $surface-lighten-2;
+        tint: $primary 8%;
     }
 
     .btn-row Button {
         height: 3;
+    }
+
+    Button {
+        border: none;
+        background: $surface-lighten-1;
+        color: $text;
+    }
+
+    Button:hover {
+        background: $surface-lighten-2;
+    }
+
+    Button:focus {
+        background: $primary 22%;
+        color: $text;
+        text-style: bold;
+    }
+
+    #generate {
+        background: $primary;
+        color: $text;
+        text-style: bold;
+    }
+
+    #generate:hover {
+        background: $primary-darken-1;
+    }
+
+    #generate:focus {
+        background: $primary-darken-1;
+        text-style: bold;
     }
 
     .hint {
@@ -197,8 +269,10 @@ class EvidocTui(App[None]):
 
     #status {
         margin-top: 1;
-        border: ascii $surface;
+        border: none;
+        background: $surface-lighten-1;
         padding: 1;
+        color: $text;
     }
     """
 
