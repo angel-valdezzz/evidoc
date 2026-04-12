@@ -3,29 +3,139 @@ from __future__ import annotations
 from pathlib import Path
 
 from textual.app import App, ComposeResult
-from textual.containers import Container
-from textual.widgets import Button, Footer, Header, Input, Select, Static
+from textual.containers import Container, Horizontal, Vertical
+from textual.widgets import Button, Footer, Header, Input, Label, Select, Static
 
 from evidoc.infrastructure.bootstrap import build_generate_use_case
 
 
 class EvidocTui(App[None]):
     TITLE = "Evidoc"
+    SUB_TITLE = "Evidence report generator"
+
+    CSS = """
+    Screen {
+        layout: vertical;
+    }
+
+    #shell {
+        width: 1fr;
+        height: 1fr;
+        padding: 1 2;
+    }
+
+    #hero {
+        margin-bottom: 1;
+    }
+
+    #hero_title {
+        text-style: bold;
+    }
+
+    #hero_copy {
+        color: $text-muted;
+    }
+
+    #workspace {
+        height: 1fr;
+    }
+
+    .panel {
+        width: 1fr;
+        height: auto;
+        padding: 1 2;
+        border: round $primary;
+    }
+
+    #form_panel {
+        width: 2fr;
+        margin-right: 1;
+    }
+
+    #summary_panel {
+        width: 1fr;
+    }
+
+    .section_title {
+        text-style: bold;
+        margin-bottom: 1;
+    }
+
+    .field {
+        margin-bottom: 1;
+    }
+
+    .field Label {
+        margin-bottom: 1;
+    }
+
+    .hint {
+        color: $text-muted;
+        margin-top: 1;
+    }
+
+    Select, Input {
+        width: 1fr;
+    }
+
+    #generate {
+        width: 100%;
+        margin-top: 1;
+    }
+
+    #status {
+        margin-top: 1;
+        padding: 1;
+        border: round $surface-lighten-1;
+    }
+    """
 
     def compose(self) -> ComposeResult:
         yield Header()
-        with Container():
-            yield Static("Generate business-friendly evidence reports")
-            yield Input(value="./results", id="source_dir", placeholder="Source directory")
-            yield Input(value="./reports", id="output_dir", placeholder="Output directory")
-            yield Select([("pdf", "pdf"), ("docx", "docx")], value="pdf", id="format")
-            yield Select([("run", "run"), ("single", "single")], value="run", id="mode")
-            yield Button("Generate", id="generate")
+        with Container(id="shell"):
+            with Vertical(id="hero"):
+                yield Static("Evidence operations console", id="hero_title")
+                yield Static(
+                    "Configure the input folders and output format before generating the final evidence package.",
+                    id="hero_copy",
+                )
+            with Horizontal(id="workspace"):
+                with Vertical(classes="panel", id="form_panel"):
+                    yield Static("Report setup", classes="section_title")
+                    with Vertical(classes="field"):
+                        yield Label("Source directory")
+                        yield Input(value="./results", id="source_dir", placeholder="Example: ./results")
+                    with Vertical(classes="field"):
+                        yield Label("Output directory")
+                        yield Input(value="./reports", id="output_dir", placeholder="Example: ./reports")
+                    with Vertical(classes="field"):
+                        yield Label("Output format")
+                        yield Select([("PDF report", "pdf"), ("DOCX report", "docx")], value="pdf", id="format")
+                    with Vertical(classes="field"):
+                        yield Label("Execution mode")
+                        yield Select(
+                            [("Complete run", "run"), ("Single result", "single")],
+                            value="run",
+                            id="mode",
+                        )
+                    yield Static(
+                        "Use complete run for batch execution or single result when you only need one evidence set.",
+                        classes="hint",
+                    )
+                    yield Button("Generate report", id="generate", variant="primary")
+                with Vertical(classes="panel", id="summary_panel"):
+                    yield Static("Operator checklist", classes="section_title")
+                    yield Static("1. Confirm the source folder contains execution artifacts.")
+                    yield Static("2. Choose the target folder where the report should be written.")
+                    yield Static("3. Select the format required by the stakeholder.")
+                    yield Static("4. Run generation and verify the resulting path notification.")
+                    yield Static("Ready to generate with the current configuration.", id="status")
         yield Footer()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id != "generate":
             return
+        self.query_one("#status", Static).update("Generating report. Please wait...")
         source_dir = Path(self.query_one("#source_dir", Input).value)
         output_dir = Path(self.query_one("#output_dir", Input).value)
         format_value = self.query_one("#format", Select).value
@@ -40,4 +150,6 @@ class EvidocTui(App[None]):
             }
         )
         outputs = generate_reports.execute(config)
-        self.notify("Generated: " + ", ".join(str(path) for path in outputs) if outputs else "No results found")
+        message = "Generated: " + ", ".join(str(path) for path in outputs) if outputs else "No results found"
+        self.query_one("#status", Static).update(message)
+        self.notify(message)

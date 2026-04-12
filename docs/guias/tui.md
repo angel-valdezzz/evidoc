@@ -10,14 +10,13 @@ La TUI es util cuando alguien necesita generar reportes sin memorizar comandos, 
 poetry run evidoc tui
 ```
 
-## Campos visibles
+## Estructura visible
 
-| Campo | Descripcion |
+| Seccion | Descripcion |
 | --- | --- |
-| `Source directory` | Carpeta de resultados |
-| `Output directory` | Carpeta destino |
-| `format` | `pdf` o `docx` |
-| `mode` | `run` o `single` |
+| `Report setup` | Formulario principal con origen, destino, formato y modo |
+| `Operator checklist` | Resumen de pasos para reducir errores de operacion |
+| `status` | Estado actual y resultado de la ultima generacion |
 
 ## Flujo recomendado
 
@@ -25,7 +24,8 @@ poetry run evidoc tui
 2. Define `output_dir`.
 3. Elige formato.
 4. Elige modo.
-5. Presiona `Generate`.
+5. Revisa el panel lateral para confirmar la operacion.
+6. Presiona `Generate report`.
 
 ## Que esperar
 
