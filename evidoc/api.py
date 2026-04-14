@@ -3,11 +3,12 @@ from __future__ import annotations
 import logging
 from contextvars import ContextVar
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 from evidoc.application.in_memory_warning_sink import InMemoryWarningSink
 from evidoc.application.warning_sink import WarningSink
 from evidoc.domain import run_from_dict
+from evidoc.domain.artifact import Artifact
 from evidoc.domain.artifact_type import ArtifactType
 from evidoc.domain.status import Status
 from evidoc.infrastructure.bootstrap import project_root
@@ -16,8 +17,17 @@ from evidoc.infrastructure.filesystem.filesystem_result_repository import Filesy
 
 LOGGER = logging.getLogger("evidoc.api")
 
+
+class ContextOptions(TypedDict):
+    root_dir: Path | str
+    result_schema_path: Path | None
+    warning_sink: WarningSink | None
+
+
 _CURRENT_API: ContextVar[EvidocAPI | None] = ContextVar("EVIDOC_CURRENT_API", default=None)
-_CURRENT_OPTIONS: ContextVar[dict[str, Any] | None] = ContextVar("EVIDOC_CURRENT_OPTIONS", default=None)
+_CURRENT_OPTIONS: ContextVar[ContextOptions | None] = ContextVar(
+    "EVIDOC_CURRENT_OPTIONS", default=None
+)
 
 
 class EvidocAPI:
@@ -37,7 +47,7 @@ class EvidocAPI:
         self._current_test_name: str | None = None
         self._current_test_id: str | None = None
         self._steps: list[dict[str, Any]] = []
-        self._artifacts: list[Any] = []
+        self._artifacts: list[Artifact] = []
 
     @property
     def run_id(self) -> str | None:
@@ -74,7 +84,7 @@ class EvidocAPI:
                 self._warn("No active test context to finish.")
                 return None
             safe_status = self._coerce_status(status, fallback=Status.INFO)
-            payload = {
+            payload: dict[str, Any] = {
                 "schema_version": "1.0.0",
                 "run_id": self._run_id,
                 "test_id": self._current_test_id,
@@ -114,7 +124,9 @@ class EvidocAPI:
                     for artifact in self._artifacts
                 ],
             }
-            result_path = self._result_repository.save_test_result(self._root_dir, run_from_dict(payload))
+            result_path = self._result_repository.save_test_result(
+                self._root_dir, run_from_dict(payload)
+            )
             return str(result_path)
         except Exception as exc:  # pragma: no cover
             self._warn(f"Unable to finish test '{self._current_test_id}': {exc}")
@@ -273,9 +285,9 @@ class EvidocAPI:
 
     @staticmethod
     def _timestamp() -> str:
-        from datetime import datetime, timezone
+        from datetime import UTC, datetime
 
-        return datetime.now(timezone.utc).isoformat()
+        return datetime.now(UTC).isoformat()
 
 
 def configure_context(
@@ -284,7 +296,7 @@ def configure_context(
     result_schema_path: Path | None = None,
     warning_sink: WarningSink | None = None,
 ) -> EvidocAPI:
-    options = {
+    options: ContextOptions = {
         "root_dir": Path(root_dir),
         "result_schema_path": result_schema_path,
         "warning_sink": warning_sink,
@@ -299,8 +311,8 @@ def get_current_api() -> EvidocAPI:
     api = _CURRENT_API.get()
     if api is not None:
         return api
-    options = _CURRENT_OPTIONS.get() or {}
-    api = EvidocAPI(**options)
+    options = _CURRENT_OPTIONS.get()
+    api = EvidocAPI(**options) if options is not None else EvidocAPI()
     _CURRENT_API.set(api)
     return api
 
@@ -339,7 +351,9 @@ def capture_screenshot(
     title: str | None = None,
     description: str | None = None,
 ) -> str | None:
-    return get_current_api().capture_screenshot(driver, element=element, title=title, description=description)
+    return get_current_api().capture_screenshot(
+        driver, element=element, title=title, description=description
+    )
 
 
 def attach_file(path: str | Path, description: str | None = None) -> str | None:

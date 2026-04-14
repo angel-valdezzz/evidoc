@@ -51,6 +51,54 @@ Ejecuta todo con coverage:
 poetry run pytest --cov=evidoc
 ```
 
+## Calidad de codigo
+
+El proyecto ahora incluye un stack de analisis estatico para calidad y arquitectura:
+
+- `ruff` para lint, formato y ordenamiento de imports.
+- `mypy` para chequeo de tipos.
+- `import-linter` para validar reglas de dependencia entre capas.
+
+Instala el entorno completo de calidad:
+
+```bash
+poetry install --with dev,test,acceptance,docs
+```
+
+Comandos principales:
+
+```bash
+poetry run ruff check .
+poetry run ruff format .
+poetry run mypy evidoc tests scripts
+poetry run lint-imports
+```
+
+Ejecuta todo lo relacionado con calidad en una sola corrida:
+
+```bash
+poetry run ruff check . && poetry run mypy evidoc tests scripts && poetry run lint-imports && poetry run pytest tests/unit -m unit && poetry run pytest tests/acceptance -m acceptance
+```
+
+## VS Code
+
+El repositorio incluye configuracion lista para trabajar desde VS Code:
+
+- formato al guardar con Ruff
+- autofix y organize imports al guardar
+- diagnosticos de `mypy`
+- tareas para `ruff`, `mypy`, `import-linter` y un agregado `Quality: all`
+- compatibilidad con `Error Lens` para mostrar errores inline
+
+Archivos relevantes:
+
+- `.vscode/settings.json`
+- `.vscode/tasks.json`
+- `.vscode/extensions.json`
+- `scripts/vscode_import_lint.py`
+
+Para ver tambien violaciones de arquitectura dentro de VS Code y `Error Lens`, ejecuta la tarea `Import Linter: VSCode diagnostics`. `import-linter` sigue siendo la validacion oficial de arquitectura, y ese script adicional existe solo para traducir esas reglas a diagnosticos por archivo y linea dentro del editor.
+
 ## Generar reportes
 
 ```bash

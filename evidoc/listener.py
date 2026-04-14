@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """Robot Framework listener that manages the Evidoc test lifecycle.
 
 Use it with ``robot --listener evidoc.listener`` so every Robot test case opens
@@ -8,9 +6,12 @@ The listener is intentionally defensive: failures in evidence capture are
 logged as warnings and should not break the Robot run by themselves.
 """
 
+from __future__ import annotations
+
 import logging
 from contextvars import ContextVar
 from time import perf_counter
+from typing import Any
 
 from evidoc import api
 from evidoc.domain.enums import Status
@@ -28,14 +29,14 @@ class Listener:
             default=None,
         )
 
-    def start_test(self, data, result) -> None:
+    def start_test(self, data: Any, result: Any) -> None:
         try:
             api.start_test(getattr(data, "name", "Unnamed test"))
             self._test_started_at.set(perf_counter())
         except Exception as exc:  # pragma: no cover
             LOGGER.warning("Unable to start Evidoc test context: %s", exc)
 
-    def end_test(self, data, result) -> None:
+    def end_test(self, data: Any, result: Any) -> None:
         try:
             started_at = self._test_started_at.get()
             duration = 0.0 if started_at is None else perf_counter() - started_at
@@ -65,11 +66,11 @@ class Listener:
 _MODULE_LISTENER = Listener()
 
 
-def start_test(data, result) -> None:
+def start_test(data: Any, result: Any) -> None:
     _MODULE_LISTENER.start_test(data, result)
 
 
-def end_test(data, result) -> None:
+def end_test(data: Any, result: Any) -> None:
     _MODULE_LISTENER.end_test(data, result)
 
 

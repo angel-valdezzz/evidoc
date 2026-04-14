@@ -6,5 +6,7 @@ La documentacion no termina en "como correrlo". Tambien define como usar Evidoc 
 
 - [Buenas practicas](buenas-practicas.md)
 - [Troubleshooting](troubleshooting.md)
+- [Guia CLI](../guias/cli.md)
+- [Referencia de comandos](../referencia/comandos-y-keywords.md)
 
 </div>

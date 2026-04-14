@@ -7,7 +7,9 @@ from evidoc.domain.report_format import ReportFormat
 
 
 class GenerateReportUseCase:
-    def __init__(self, result_repository: ResultRepository, renderers: dict[ReportFormat, ReportRenderer]) -> None:
+    def __init__(
+        self, result_repository: ResultRepository, renderers: dict[ReportFormat, ReportRenderer]
+    ) -> None:
         self._result_repository = result_repository
         self._renderers = renderers
 
@@ -18,5 +20,8 @@ class GenerateReportUseCase:
             return []
         config.output_dir.mkdir(parents=True, exist_ok=True)
         if config.mode.value == "single":
-            return [renderer.render_single(config.source_dir, config.output_dir, result) for result in results]
+            return [
+                renderer.render_single(config.source_dir, config.output_dir, result)
+                for result in results
+            ]
         return [renderer.render_run(config.source_dir, config.output_dir, results)]

@@ -11,7 +11,9 @@ class LoadConfigUseCase:
     def __init__(self, config_repository: ConfigRepository) -> None:
         self._config_repository = config_repository
 
-    def execute(self, config_path: Path | None = None, overrides: dict[str, Any] | None = None) -> EvidocConfig:
+    def execute(
+        self, config_path: Path | None = None, overrides: dict[str, Any] | None = None
+    ) -> EvidocConfig:
         payload = self._config_repository.load(config_path)
         merged = dict(payload)
         for key, value in (overrides or {}).items():

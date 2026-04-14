@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from evidoc.domain.status import Status
 
@@ -13,5 +13,5 @@ class LogEntry:
     timestamp: str
 
     @classmethod
-    def create(cls, level: Status, message: str) -> "LogEntry":
-        return cls(level=level, message=message, timestamp=datetime.now(timezone.utc).isoformat())
+    def create(cls, level: Status, message: str) -> LogEntry:
+        return cls(level=level, message=message, timestamp=datetime.now(UTC).isoformat())

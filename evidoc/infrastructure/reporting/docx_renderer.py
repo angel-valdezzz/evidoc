@@ -49,7 +49,12 @@ class DocxReportRenderer(ReportRenderer):
                     if artifact is None:
                         continue
                     if artifact.type == ArtifactType.IMAGE:
-                        image_path = source_dir / f"run-{result.run_id}" / f"test-{result.test_id}" / artifact.path
+                        image_path = (
+                            source_dir
+                            / f"run-{result.run_id}"
+                            / f"test-{result.test_id}"
+                            / artifact.path
+                        )
                         document.add_paragraph(artifact.title or "Screenshot")
                         if artifact.description:
                             document.add_paragraph(artifact.description)

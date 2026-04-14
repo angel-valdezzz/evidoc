@@ -4,6 +4,7 @@ import subprocess
 import sys
 import threading
 from pathlib import Path
+from typing import ClassVar
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -13,7 +14,6 @@ from textual.reactive import reactive
 from textual.widgets import Button, Header, Input, Label, Static, TabbedContent, TabPane
 
 from evidoc.infrastructure.bootstrap import build_generate_use_case
-
 
 WELCOME_ART = r"""
 ######## #     # ##### ######  ####   #####
@@ -32,7 +32,7 @@ class EvidocTui(App[None]):
     selected_format = reactive("pdf")
     selected_mode = reactive("run")
 
-    BINDINGS = [
+    BINDINGS: ClassVar[list[Binding | tuple[str, str] | tuple[str, str, str]]] = [
         Binding("f1", "show_welcome", "Bienvenida"),
         Binding("f2", "show_operation", "Operacion"),
         Binding("ctrl+p", "noop", "", show=False, priority=True),
@@ -41,7 +41,7 @@ class EvidocTui(App[None]):
         Binding("ctrl+o", "browse_output", "Buscar destino", show=False),
     ]
 
-    CSS = """
+    CSS: ClassVar[str] = """
     Screen {
         background: $surface;
     }
@@ -342,15 +342,23 @@ class EvidocTui(App[None]):
                         )
                         with Container(classes="panel", id="welcome-actions"):
                             yield Static("Inicio rapido", classes="panel-title")
-                            yield Static("1. Abre la pestana Operacion cuando estes listo para configurar un reporte.")
+                            yield Static(
+                                "1. Abre la pestana Operacion cuando estes listo para configurar un reporte."
+                            )
                             yield Static("2. Elige las carpetas de origen y output.")
-                            yield Static("3. Selecciona el formato del reporte y el modo de ejecucion.")
+                            yield Static(
+                                "3. Selecciona el formato del reporte y el modo de ejecucion."
+                            )
                             yield Static("4. Genera el reporte y confirma el output resultante.")
                         with Container(classes="panel", id="welcome-notes"):
                             yield Static("Notas de diseno", classes="panel-title")
                             yield Static("La TUI abre en Bienvenida por defecto.")
-                            yield Static("El area de contenido usa todo el espacio disponible debajo de las tabs.")
-                            yield Static("La pestana Operacion cambia a disposicion vertical en ventanas de CMD mas pequenas.")
+                            yield Static(
+                                "El area de contenido usa todo el espacio disponible debajo de las tabs."
+                            )
+                            yield Static(
+                                "La pestana Operacion cambia a disposicion vertical en ventanas de CMD mas pequenas."
+                            )
             with TabPane("Operacion", id="operation"):
                 with ScrollableContainer():
                     with Container(id="workspace"):
@@ -358,22 +366,38 @@ class EvidocTui(App[None]):
                             yield Static("Configuracion del reporte", classes="panel-title")
                             with Horizontal(classes="field-row"):
                                 yield Label("Directorio de origen", classes="field-label")
-                                yield Input(value="./results", id="source_dir", classes="field-input")
+                                yield Input(
+                                    value="./results", id="source_dir", classes="field-input"
+                                )
                                 yield Button("Explorar", id="browse_source", classes="browse-btn")
                             with Horizontal(classes="field-row"):
                                 yield Label("Directorio de output", classes="field-label")
-                                yield Input(value="./reports", id="output_dir", classes="field-input")
+                                yield Input(
+                                    value="./reports", id="output_dir", classes="field-input"
+                                )
                                 yield Button("Explorar", id="browse_output", classes="browse-btn")
                             with Horizontal(classes="field-row"):
                                 yield Label("Formato de output", classes="field-label")
                                 with Horizontal(classes="choice-group"):
-                                    yield Button("Reporte PDF", id="format_pdf", classes="choice-button")
-                                    yield Button("Reporte DOCX", id="format_docx", classes="choice-button last")
+                                    yield Button(
+                                        "Reporte PDF", id="format_pdf", classes="choice-button"
+                                    )
+                                    yield Button(
+                                        "Reporte DOCX",
+                                        id="format_docx",
+                                        classes="choice-button last",
+                                    )
                             with Horizontal(classes="field-row"):
                                 yield Label("Modo de ejecucion", classes="field-label")
                                 with Horizontal(classes="choice-group"):
-                                    yield Button("Run completo", id="mode_run", classes="choice-button")
-                                    yield Button("Resultado unico", id="mode_single", classes="choice-button last")
+                                    yield Button(
+                                        "Run completo", id="mode_run", classes="choice-button"
+                                    )
+                                    yield Button(
+                                        "Resultado unico",
+                                        id="mode_single",
+                                        classes="choice-button last",
+                                    )
                             yield Static(
                                 "Usa run completo para ejecucion por lotes o resultado unico cuando solo necesites un set de evidencia.",
                                 classes="hint",
@@ -382,12 +406,24 @@ class EvidocTui(App[None]):
                                 yield Button("Generar reporte", id="generate", variant="primary")
                         with Vertical(classes="panel", id="summary-panel"):
                             yield Static("Checklist del operador", classes="panel-title")
-                            yield Static("1. Confirma que la carpeta de origen contiene artefactos de ejecucion.")
-                            yield Static("2. Elige la carpeta destino donde debe escribirse el reporte.")
+                            yield Static(
+                                "1. Confirma que la carpeta de origen contiene artefactos de ejecucion."
+                            )
+                            yield Static(
+                                "2. Elige la carpeta destino donde debe escribirse el reporte."
+                            )
                             yield Static("3. Selecciona el formato requerido por el stakeholder.")
-                            yield Static("4. Ejecuta la generacion y verifica la notificacion con la ruta resultante.")
-                            yield Static("Listo para generar con la configuracion actual.", id="status")
-        yield Static("F1 Bienvenida   F2 Operacion   Ctrl+S Explorar origen   Ctrl+O Explorar destino   Ctrl+G Generar", id="bottombar")
+                            yield Static(
+                                "4. Ejecuta la generacion y verifica la notificacion con la ruta resultante."
+                            )
+                            yield Static(
+                                "Listo para generar con la configuracion actual.", id="status"
+                            )
+        yield Static(
+            "F1 Bienvenida   F2 Operacion   Ctrl+S Explorar origen   Ctrl+O Explorar destino   Ctrl+G Generar",
+            id="bottombar",
+        )
+
     def on_mount(self) -> None:
         self.action_show_welcome()
         self._refresh_choices()
@@ -397,18 +433,18 @@ class EvidocTui(App[None]):
         self._sync_layout()
 
     def _sync_layout(self) -> None:
-        if not self.is_mounted:
-            return
         narrow = self.size.width <= 110
         self.query_one("#workspace").set_class(narrow, "-narrow")
 
     def _refresh_choices(self) -> None:
-        if not self.is_mounted:
-            return
         self.query_one("#format_pdf", Button).set_class(self.selected_format == "pdf", "-selected")
-        self.query_one("#format_docx", Button).set_class(self.selected_format == "docx", "-selected")
+        self.query_one("#format_docx", Button).set_class(
+            self.selected_format == "docx", "-selected"
+        )
         self.query_one("#mode_run", Button).set_class(self.selected_mode == "run", "-selected")
-        self.query_one("#mode_single", Button).set_class(self.selected_mode == "single", "-selected")
+        self.query_one("#mode_single", Button).set_class(
+            self.selected_mode == "single", "-selected"
+        )
 
     def _open_picker_in_subprocess(self, mode: str, title: str) -> str | None:
         if mode == "directory":
@@ -419,7 +455,9 @@ class EvidocTui(App[None]):
             )
         else:
             return None
-        result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=False)
+        result = subprocess.run(
+            [sys.executable, "-c", code], capture_output=True, text=True, check=False
+        )
         value = result.stdout.strip()
         return value or None
 
@@ -452,7 +490,11 @@ class EvidocTui(App[None]):
             }
         )
         outputs = generate_reports.execute(config)
-        message = "Generado: " + ", ".join(str(path) for path in outputs) if outputs else "No se encontraron resultados"
+        message = (
+            "Generado: " + ", ".join(str(path) for path in outputs)
+            if outputs
+            else "No se encontraron resultados"
+        )
         self.query_one("#status", Static).update(message)
         self.notify(message)
 
