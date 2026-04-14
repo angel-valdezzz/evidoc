@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """Helpers for bundled documentation assets distributed with Evidoc."""
 
 import os
@@ -9,6 +7,7 @@ import sys
 import tempfile
 import webbrowser
 from importlib import resources
+from importlib.resources.abc import Traversable
 from pathlib import Path
 
 _DOCS_ROOT = ("resources", "docs")
@@ -24,7 +23,7 @@ def available_documents() -> tuple[str, ...]:
     return tuple(sorted(_BUNDLED_DOCS))
 
 
-def _copy_traversable_to_path(source, destination: Path) -> None:
+def _copy_traversable_to_path(source: Traversable, destination: Path) -> None:
     if source.is_dir():
         destination.mkdir(parents=True, exist_ok=True)
         for child in source.iterdir():
@@ -37,8 +36,10 @@ def _copy_traversable_to_path(source, destination: Path) -> None:
 
 
 def _resource_path(*segments: str) -> Path:
-    traversable = resources.files("evidoc")
+    traversable: Traversable = resources.files("evidoc")
+    parent = traversable
     for segment in (*_DOCS_ROOT, *segments):
+        parent = traversable
         traversable = traversable.joinpath(segment)
 
     if isinstance(traversable, Path):
@@ -48,7 +49,8 @@ def _resource_path(*segments: str) -> Path:
     copy_root = temp_root / Path(*segments[:-1]) if len(segments) > 1 else temp_root
     if copy_root.exists():
         shutil.rmtree(copy_root)
-    _copy_traversable_to_path(traversable if len(segments) == 1 else traversable.parent, copy_root)
+    source = traversable if len(segments) == 1 else parent
+    _copy_traversable_to_path(source, copy_root)
     return copy_root / segments[-1]
 
 

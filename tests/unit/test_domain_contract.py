@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
-
 from evidoc.domain import SCHEMA_VERSION, run_from_dict, validate_run_payload
 from evidoc.domain.enums import ArtifactType, Status
 from evidoc.domain.models import Artifact, LogEntry, Run, Step, TestCase
@@ -12,9 +12,9 @@ from evidoc.domain.models import Artifact, LogEntry, Run, Step, TestCase
 pytestmark = pytest.mark.unit
 
 
-def load_example_payload() -> dict:
+def load_example_payload() -> dict[str, Any]:
     example_path = Path(__file__).resolve().parents[2] / "examples" / "run-result.example.json"
-    return json.loads(example_path.read_text(encoding="utf-8"))
+    return cast(dict[str, Any], json.loads(example_path.read_text(encoding="utf-8")))
 
 
 def test_example_payload_matches_schema_and_reference_rules() -> None:
@@ -37,7 +37,13 @@ def test_run_rejects_dangling_artifact_reference() -> None:
                 Step(
                     title="Missing evidence",
                     status=Status.FAIL,
-                    logs=(LogEntry(level=Status.INFO, message="No screenshot saved", timestamp="2026-04-11T23:03:17Z"),),
+                    logs=(
+                        LogEntry(
+                            level=Status.INFO,
+                            message="No screenshot saved",
+                            timestamp="2026-04-11T23:03:17Z",
+                        ),
+                    ),
                     artifact_ids=("missing_artifact",),
                 ),
             ),

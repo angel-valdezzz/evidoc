@@ -7,11 +7,21 @@ poetry run evidoc generate [--source_dir PATH] [--output_dir PATH] [--mode run|s
 poetry run evidoc tui
 poetry run evidoc docs manual
 poetry run evidoc docs robot-library
+poetry run ruff check .
+poetry run ruff format .
+poetry run mypy evidoc tests scripts
+poetry run lint-imports
 ```
 
 `evidoc docs manual` abre el manual offline generado con MkDocs y empaquetado dentro del `wheel` instalado localmente.
 
 `evidoc docs robot-library` abre la referencia HTML de la libreria `evidoc.robot` generada con `libdoc` y empaquetada dentro de la distribucion instalada.
+
+### Corrida completa de calidad
+
+```bash
+poetry run ruff check . && poetry run mypy evidoc tests scripts && poetry run lint-imports && poetry run pytest tests/unit -m unit && poetry run pytest tests/acceptance -m acceptance
+```
 
 ## Python API
 

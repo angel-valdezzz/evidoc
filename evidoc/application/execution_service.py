@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -158,7 +158,7 @@ class ExecutionService:
             schema_version=self.schema_version,
             run_id=context.run_id,
             test_id=context.test_id,
-            generated_at=datetime.now(timezone.utc).isoformat(),
+            generated_at=datetime.now(UTC).isoformat(),
             test_case=TestCase(
                 name=context.name,
                 status=status,

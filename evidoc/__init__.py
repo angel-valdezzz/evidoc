@@ -4,9 +4,9 @@ from evidoc.api import (
     EvidocAPI,
     attach_artifact,
     attach_file,
+    capture_screenshot,
     clear_context,
     configure_context,
-    capture_screenshot,
     end_test,
     get_current_api,
     log_error,
@@ -17,13 +17,13 @@ from evidoc.api import (
 )
 
 __all__ = [
-    "__version__",
     "EvidocAPI",
+    "__version__",
     "attach_artifact",
     "attach_file",
+    "capture_screenshot",
     "clear_context",
     "configure_context",
-    "capture_screenshot",
     "end_test",
     "get_current_api",
     "log_error",

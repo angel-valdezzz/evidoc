@@ -70,5 +70,22 @@ poetry run evidoc docs robot-library
 - Si abres `docs robot-library`, imprime la ruta del HTML abierto para facilitar soporte y troubleshooting.
 - Los argumentos pasados tienen prioridad sobre `evidoc.json` o `evidoc.toml`.
 
+## Comandos de calidad
+
+El flujo de operacion local tambien puede incluir chequeos de calidad antes de generar reportes o publicar cambios.
+
+```bash
+poetry run ruff check .
+poetry run ruff format .
+poetry run mypy evidoc tests scripts
+poetry run lint-imports
+```
+
+Corrida completa de calidad:
+
+```bash
+poetry run ruff check . && poetry run mypy evidoc tests scripts && poetry run lint-imports && poetry run pytest tests/unit -m unit && poetry run pytest tests/acceptance -m acceptance
+```
+
 ??? info "Buena practica operativa"
     Usa rutas relativas del proyecto cuando compartas comandos con otros equipos. Eso evita que el manual se llene de paths locales irrepetibles.

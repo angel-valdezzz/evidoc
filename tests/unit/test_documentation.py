@@ -3,7 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from evidoc.documentation import available_documents, resolve_document_path
 
 pytestmark = pytest.mark.unit

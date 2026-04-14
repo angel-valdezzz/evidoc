@@ -1,0 +1,38 @@
+[importlinter]
+root_package = evidoc
+include_external_packages = False
+
+[importlinter:contract:domain_isolation]
+name = Domain must remain isolated from outer layers
+type = forbidden
+source_modules =
+    evidoc.domain
+forbidden_modules =
+    evidoc.application
+    evidoc.infrastructure
+    evidoc.interfaces
+    evidoc.api
+    evidoc.listener
+    evidoc.robot
+    evidoc.documentation
+
+[importlinter:contract:application_isolation]
+name = Application must not depend on interfaces or infrastructure
+type = forbidden
+source_modules =
+    evidoc.application
+forbidden_modules =
+    evidoc.infrastructure
+    evidoc.interfaces
+    evidoc.api
+    evidoc.listener
+    evidoc.robot
+    evidoc.documentation
+
+[importlinter:contract:infrastructure_boundary]
+name = Infrastructure must not depend on interface adapters
+type = forbidden
+source_modules =
+    evidoc.infrastructure
+forbidden_modules =
+    evidoc.interfaces

@@ -4,24 +4,35 @@ import re
 from pathlib import Path
 
 import pytest
-from PIL import Image as PilImage
-from typer.testing import CliRunner
-
 from evidoc.application.services import GenerateReportUseCase
 from evidoc.domain.enums import ArtifactType, GenerateMode, ReportFormat, Status
-from evidoc.domain.models import ArtifactRef, LogEntry, StepResult, TestCaseMetadata as CaseMeta, TestResult as ResultModel
+from evidoc.domain.models import (
+    ArtifactRef,
+    LogEntry,
+    StepResult,
+)
+from evidoc.domain.models import (
+    TestCaseMetadata as CaseMeta,
+)
+from evidoc.domain.models import (
+    TestResult as ResultModel,
+)
 from evidoc.infrastructure.bootstrap import project_root
 from evidoc.infrastructure.filesystem.repository import FilesystemResultRepository
 from evidoc.infrastructure.reporting.docx_renderer import DocxReportRenderer
 from evidoc.infrastructure.reporting.pdf_renderer import PdfReportRenderer
 from evidoc.interfaces.cli.main import app
+from PIL import Image as PilImage
+from typer.testing import CliRunner
 
 pytestmark = pytest.mark.unit
 
 RUNNER = CliRunner()
 
 
-def build_result(*, run_id: str, test_id: str, image_count: int = 0, include_missing_image: bool = False) -> ResultModel:
+def build_result(
+    *, run_id: str, test_id: str, image_count: int = 0, include_missing_image: bool = False
+) -> ResultModel:
     artifact_ids = []
     artifacts = []
     for index in range(image_count):
@@ -75,15 +86,29 @@ def build_result(*, run_id: str, test_id: str, image_count: int = 0, include_mis
             StepResult(
                 title="Open page",
                 status=Status.PASS,
-                logs=(LogEntry(level=Status.INFO, message="Navigated to the page", timestamp="2026-04-11T23:03:06Z"),),
+                logs=(
+                    LogEntry(
+                        level=Status.INFO,
+                        message="Navigated to the page",
+                        timestamp="2026-04-11T23:03:06Z",
+                    ),
+                ),
                 artifact_ids=tuple(artifact_ids[: max(1, len(artifact_ids))]),
             ),
             StepResult(
                 title="Validate content",
                 status=Status.FAIL if include_missing_image else Status.PASS,
                 logs=(
-                    LogEntry(level=Status.INFO, message="Collected validation logs", timestamp="2026-04-11T23:03:12Z"),
-                    LogEntry(level=Status.WARN if include_missing_image else Status.INFO, message="Attached secondary evidence", timestamp="2026-04-11T23:03:13Z"),
+                    LogEntry(
+                        level=Status.INFO,
+                        message="Collected validation logs",
+                        timestamp="2026-04-11T23:03:12Z",
+                    ),
+                    LogEntry(
+                        level=Status.WARN if include_missing_image else Status.INFO,
+                        message="Attached secondary evidence",
+                        timestamp="2026-04-11T23:03:13Z",
+                    ),
                 ),
                 artifact_ids=("run_log",),
             ),
@@ -184,7 +209,9 @@ def test_pdf_renderer_handles_images_missing_images_and_pagination(tmp_path: Pat
     output_dir = tmp_path / "reports"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    result = build_result(run_id="run_pdf", test_id="case_pdf", image_count=3, include_missing_image=True)
+    result = build_result(
+        run_id="run_pdf", test_id="case_pdf", image_count=3, include_missing_image=True
+    )
     persist_result(source_dir, result)
 
     output_path = PdfReportRenderer().render_run(source_dir, output_dir, [result])
@@ -217,7 +244,9 @@ def test_generate_report_use_case_still_supports_pdf_output(tmp_path: Path) -> N
 
 
 def test_generate_report_use_case_supports_docx_output(tmp_path: Path) -> None:
-    persist_result(tmp_path / "results", build_result(run_id="run_use_case_docx", test_id="case_docx"))
+    persist_result(
+        tmp_path / "results", build_result(run_id="run_use_case_docx", test_id="case_docx")
+    )
 
     repo = FilesystemResultRepository(project_root() / "schemas" / "result.schema.json")
     docx_outputs = GenerateReportUseCase(
@@ -247,16 +276,20 @@ def test_cli_docs_without_subcommand_lists_available_targets() -> None:
     assert "Available targets: manual, robot-library" in result.stdout
 
 
-def test_cli_docs_manual_opens_bundled_mkdocs_site(monkeypatch, tmp_path: Path) -> None:
+def test_cli_docs_manual_opens_bundled_mkdocs_site(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     document_path = tmp_path / "site" / "index.html"
     document_path.parent.mkdir(parents=True, exist_ok=True)
     document_path.write_text("<html></html>", encoding="utf-8")
     opened: list[str] = []
 
-    monkeypatch.setattr(
-        "evidoc.interfaces.cli.main.open_documentation",
-        lambda name: opened.append(name) or document_path,
-    )
+    def fake_open_documentation(name: str) -> Path:
+        opened.append(name)
+        return document_path
+
+    monkeypatch.setattr("evidoc.interfaces.cli.main.open_documentation", fake_open_documentation)
 
     result = RUNNER.invoke(app, ["docs", "manual"])
 
@@ -265,15 +298,19 @@ def test_cli_docs_manual_opens_bundled_mkdocs_site(monkeypatch, tmp_path: Path) 
     assert str(document_path) in result.stdout
 
 
-def test_cli_docs_robot_library_opens_bundled_reference(monkeypatch, tmp_path: Path) -> None:
+def test_cli_docs_robot_library_opens_bundled_reference(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     document_path = tmp_path / "robot-library.html"
     document_path.write_text("<html></html>", encoding="utf-8")
     opened: list[str] = []
 
-    monkeypatch.setattr(
-        "evidoc.interfaces.cli.main.open_documentation",
-        lambda name: opened.append(name) or document_path,
-    )
+    def fake_open_documentation(name: str) -> Path:
+        opened.append(name)
+        return document_path
+
+    monkeypatch.setattr("evidoc.interfaces.cli.main.open_documentation", fake_open_documentation)
 
     result = RUNNER.invoke(app, ["docs", "robot-library"])
 
