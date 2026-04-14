@@ -3,10 +3,9 @@ from __future__ import annotations
 import json
 import threading
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
-from jsonschema import validate
-
 from evidoc.api import (
     EvidocAPI,
     attach_artifact,
@@ -21,19 +20,20 @@ from evidoc.api import (
 from evidoc.application.services import InMemoryWarningSink
 from evidoc.domain.enums import Status
 from evidoc.infrastructure.bootstrap import project_root
+from jsonschema import validate
 
 pytestmark = pytest.mark.unit
 
 
-def load_schema() -> dict:
+def load_schema() -> dict[str, Any]:
     schema_path = project_root() / "schemas" / "result.schema.json"
-    return json.loads(schema_path.read_text(encoding="utf-8"))
+    return cast(dict[str, Any], json.loads(schema_path.read_text(encoding="utf-8")))
 
 
-def load_result(root_dir: Path, test_id: str) -> dict:
+def load_result(root_dir: Path, test_id: str) -> dict[str, Any]:
     run_id = (root_dir / ".run_id").read_text(encoding="utf-8").strip()
     result_path = root_dir / f"run-{run_id}" / f"test-{test_id}" / "result.json"
-    return json.loads(result_path.read_text(encoding="utf-8"))
+    return cast(dict[str, Any], json.loads(result_path.read_text(encoding="utf-8")))
 
 
 def test_api_creates_run_test_and_artifact_structure(tmp_path: Path) -> None:
@@ -181,7 +181,7 @@ def test_module_level_api_isolated_per_thread(tmp_path: Path) -> None:
         root_dir = tmp_path / name
         configure_context(root_dir=root_dir, warning_sink=InMemoryWarningSink())
         try:
-            test_id = start_test(name)
+            start_test(name)
             log_step(f"step-{name}", "PASS")
             artifact = root_dir / f"{name}.txt"
             artifact.parent.mkdir(parents=True, exist_ok=True)

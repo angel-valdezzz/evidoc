@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from typing import cast
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER
@@ -9,7 +10,16 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.lib.utils import ImageReader
-from reportlab.platypus import HRFlowable, Image, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import (
+    HRFlowable,
+    Image,
+    PageBreak,
+    Paragraph,
+    SimpleDocTemplate,
+    Spacer,
+    Table,
+    TableStyle,
+)
 
 from evidoc.application.report_renderer import ReportRenderer
 from evidoc.domain.artifact import Artifact
@@ -88,9 +98,11 @@ class PdfReportRenderer(ReportRenderer):
                 textColor=colors.white,
             )
         )
-        return styles
+        return cast(dict[str, ParagraphStyle], styles)
 
-    def _test_section(self, result: Run, styles: dict[str, ParagraphStyle], source_dir: Path) -> list:
+    def _test_section(
+        self, result: Run, styles: dict[str, ParagraphStyle], source_dir: Path
+    ) -> list:
         items: list = [
             Paragraph(result.test_case.name, styles["Heading1"]),
             Spacer(1, 0.04 * inch),
@@ -122,8 +134,14 @@ class PdfReportRenderer(ReportRenderer):
             else:
                 items.append(Paragraph("No logs recorded.", styles["Muted"]))
 
-            attachments = [artifact_map[artifact_id] for artifact_id in step.artifact_ids if artifact_id in artifact_map]
-            file_refs = [artifact for artifact in attachments if artifact.type != ArtifactType.IMAGE]
+            attachments = [
+                artifact_map[artifact_id]
+                for artifact_id in step.artifact_ids
+                if artifact_id in artifact_map
+            ]
+            file_refs = [
+                artifact for artifact in attachments if artifact.type != ArtifactType.IMAGE
+            ]
             for artifact in file_refs:
                 label = artifact.title or artifact.path
                 items.append(Paragraph(f"Attachment: {self._escape(label)}", styles["Muted"]))
@@ -133,7 +151,9 @@ class PdfReportRenderer(ReportRenderer):
                     image_refs.append((step.title, artifact))
 
             if step_index < len(result.steps):
-                items.extend([Spacer(1, 0.06 * inch), self._separator(light=True), Spacer(1, 0.06 * inch)])
+                items.extend(
+                    [Spacer(1, 0.06 * inch), self._separator(light=True), Spacer(1, 0.06 * inch)]
+                )
 
         if image_refs:
             items.append(PageBreak())
@@ -159,9 +179,16 @@ class PdfReportRenderer(ReportRenderer):
             rows.append(("Requirement", result.test_case.requirement))
         return rows
 
-    def _step_block(self, step_number: int, title: str, status: str, styles: dict[str, ParagraphStyle]) -> list:
+    def _step_block(
+        self, step_number: int, title: str, status: str, styles: dict[str, ParagraphStyle]
+    ) -> list:
         table = Table(
-            [[Paragraph(f"<b>{step_number}. {self._escape(title)}</b>", styles["BodyText"]), self._status_badge(status, styles)]],
+            [
+                [
+                    Paragraph(f"<b>{step_number}. {self._escape(title)}</b>", styles["BodyText"]),
+                    self._status_badge(status, styles),
+                ]
+            ],
             colWidths=[5.55 * inch, 0.95 * inch],
         )
         table.setStyle(
@@ -181,13 +208,15 @@ class PdfReportRenderer(ReportRenderer):
 
     def _image_block(
         self,
-        result: TestResult,
+        result: Run,
         step_title: str,
         artifact: Artifact,
         source_dir: Path,
         styles: dict[str, ParagraphStyle],
     ) -> list:
-        image_path = source_dir / f"run-{result.run_id}" / f"test-{result.test_id}" / Path(artifact.path)
+        image_path = (
+            source_dir / f"run-{result.run_id}" / f"test-{result.test_id}" / Path(artifact.path)
+        )
         block = [
             Paragraph(f"<b>Step:</b> {self._escape(step_title)}", styles["BodyText"]),
             Paragraph(self._escape(artifact.title or "Screenshot"), styles["BodyText"]),
@@ -206,7 +235,9 @@ class PdfReportRenderer(ReportRenderer):
             )
             return block
 
-        width, height = self._scaled_image_size(image_path, max_width=6.2 * inch, max_height=3.2 * inch)
+        width, height = self._scaled_image_size(
+            image_path, max_width=6.2 * inch, max_height=3.2 * inch
+        )
         block.extend(
             [
                 Image(str(image_path), width=width, height=height),
@@ -215,7 +246,9 @@ class PdfReportRenderer(ReportRenderer):
         )
         return block
 
-    def _scaled_image_size(self, image_path: Path, *, max_width: float, max_height: float) -> tuple[float, float]:
+    def _scaled_image_size(
+        self, image_path: Path, *, max_width: float, max_height: float
+    ) -> tuple[float, float]:
         raw_width, raw_height = ImageReader(str(image_path)).getSize()
         if not raw_width or not raw_height:
             return max_width, max_height
@@ -253,8 +286,4 @@ class PdfReportRenderer(ReportRenderer):
         return re.sub(r"[^A-Za-z0-9._-]+", "_", value).strip("._") or "test"
 
     def _escape(self, value: str) -> str:
-        return (
-            value.replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-        )
+        return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")

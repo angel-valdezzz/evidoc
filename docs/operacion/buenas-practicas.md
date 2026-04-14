@@ -26,3 +26,21 @@
 === "Desarrollo"
 
     Usa la API y revisa JSON cuando el reporte no explique suficiente.
+
+## Para mantener calidad tecnica
+
+- Ejecuta `ruff` como linter y formatter de referencia.
+- Ejecuta `mypy` antes de fusionar cambios que toquen contratos, renderers o integraciones.
+- Ejecuta `import-linter` cuando cambie la relacion entre `domain`, `application`, `infrastructure` o `interfaces`.
+- Usa la corrida completa de calidad antes de publicar cambios importantes.
+
+```bash
+poetry run ruff check . && poetry run mypy evidoc tests scripts && poetry run lint-imports && poetry run pytest tests/unit -m unit && poetry run pytest tests/acceptance -m acceptance
+```
+
+## Para trabajar desde VS Code
+
+- El repositorio ya incluye formato al guardar con Ruff.
+- `mypy` queda integrado como proveedor de diagnosticos del workspace.
+- `Error Lens` puede mostrar en linea los hallazgos de Ruff y mypy.
+- Para ver contratos de arquitectura como diagnosticos del editor, ejecuta la tarea `Import Linter: VSCode diagnostics`.

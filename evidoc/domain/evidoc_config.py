@@ -19,7 +19,7 @@ class EvidocConfig:
     config_path: Path | None = None
 
     @classmethod
-    def from_mapping(cls, payload: dict[str, Any]) -> "EvidocConfig":
+    def from_mapping(cls, payload: dict[str, Any]) -> EvidocConfig:
         source_dir = Path(payload.get("source_dir", "./results"))
         output_dir = Path(payload.get("output_dir", "./reports"))
         fmt = ReportFormat(payload.get("format", ReportFormat.PDF))

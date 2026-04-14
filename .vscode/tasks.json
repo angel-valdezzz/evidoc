@@ -1,0 +1,89 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Ruff: check",
+      "type": "shell",
+      "command": "poetry run ruff check .",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Ruff: format",
+      "type": "shell",
+      "command": "poetry run ruff format .",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Mypy: check",
+      "type": "shell",
+      "command": "poetry run mypy evidoc tests scripts",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": {
+        "owner": "mypy",
+        "fileLocation": [
+          "relative",
+          "${workspaceFolder}"
+        ],
+        "pattern": {
+          "regexp": "^(.+?):(\\d+):(?:(\\d+):)?\\s*(error|note):\\s(.+?)(?:\\s\\[(.+)\\])?$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5,
+          "code": 6
+        }
+      }
+    },
+    {
+      "label": "Import Linter: contracts",
+      "type": "shell",
+      "command": "poetry run lint-imports",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Import Linter: VSCode diagnostics",
+      "type": "shell",
+      "command": "poetry run python scripts/vscode_import_lint.py",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": {
+        "owner": "import-linter",
+        "fileLocation": [
+          "relative",
+          "${workspaceFolder}"
+        ],
+        "pattern": {
+          "regexp": "^(.+?):(\\d+):(\\d+):\\s(error|warning):\\s(.+)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      }
+    },
+    {
+      "label": "Quality: all",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Ruff: check",
+        "Mypy: check",
+        "Import Linter: contracts",
+        "Import Linter: VSCode diagnostics"
+      ]
+    }
+  ]
+}

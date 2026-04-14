@@ -4,9 +4,8 @@ import json
 from pathlib import Path
 
 import pytest
-from pytest_bdd import given, parsers, scenarios, then, when
-
 from evidoc.api import EvidocAPI
+from pytest_bdd import given, parsers, scenarios, then, when
 
 pytestmark = pytest.mark.acceptance
 

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """<p>Biblioteca de Robot Framework para capturar evidencia con Evidoc.</p>
 
 <p>Utilizala cuando quieras registrar pasos, mensajes, capturas de pantalla o
@@ -22,13 +20,14 @@ archivos adjuntos dentro del resultado estructurado de Evidoc.</p>
 </ul>
 """
 
-from pathlib import Path
-from typing import Any
+from __future__ import annotations
 
-from robot.api.deco import keyword, library
-from robot.libraries.BuiltIn import BuiltIn
+from pathlib import Path
+from typing import Any, cast
 
 from evidoc import api
+from robot.api.deco import keyword, library
+from robot.libraries.BuiltIn import BuiltIn
 
 ROBOT_LIBRARY_SCOPE = "GLOBAL"
 ROBOT_AUTO_KEYWORDS = False
@@ -156,18 +155,21 @@ def capture_screenshot(
     description: str | None = None,
     library: str | None = None,
 ) -> str | None:
-    return _LIBRARY.capture_screenshot(
-        driver=driver,
-        element=element,
-        title=title,
-        description=description,
-        library=library,
+    return cast(
+        str | None,
+        _LIBRARY.capture_screenshot(
+            driver=driver,
+            element=element,
+            title=title,
+            description=description,
+            library=library,
+        ),
     )
 
 
 @keyword("Attach Artifact")
 def attach_artifact(path: str | Path, description: str | None = None) -> str | None:
-    return _LIBRARY.attach_artifact(path, description)
+    return cast(str | None, _LIBRARY.attach_artifact(path, description))
 
 
 @keyword("Log Info")

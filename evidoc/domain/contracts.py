@@ -4,7 +4,7 @@ import json
 from collections import Counter
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from jsonschema import Draft202012Validator
 
@@ -24,7 +24,7 @@ def _project_root() -> Path:
 @lru_cache(maxsize=1)
 def load_run_schema() -> dict[str, Any]:
     schema_path = _project_root() / "schemas" / "result.schema.json"
-    return json.loads(schema_path.read_text(encoding="utf-8"))
+    return cast(dict[str, Any], json.loads(schema_path.read_text(encoding="utf-8")))
 
 
 @lru_cache(maxsize=1)

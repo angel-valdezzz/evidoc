@@ -34,6 +34,11 @@ mkdocs-glightbox = "^0.5.2"
 mkdocs-section-index = "^0.3.11"
 mkdocs-minify-plugin = "^0.8.0"
 
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.11.8"
+mypy = "^1.15.0"
+import-linter = "^2.3"
+
 [tool.poetry.scripts]
 evidoc = "evidoc.interfaces.cli.main:app"
 
@@ -51,3 +56,54 @@ addopts = [
     "--strict-markers",
 ]
 bdd_features_base_dir = "tests/acceptance/features"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["evidoc", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "B", "UP", "SIM", "C4", "PIE", "RET", "RUF"]
+ignore = ["E501", "E701", "RET504"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["N801", "N806"]
+"evidoc/interfaces/cli/main.py" = ["B008"]
+"evidoc/interfaces/tui/app.py" = ["SIM117", "W291"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.mypy]
+python_version = "3.11"
+files = ["evidoc", "tests", "scripts"]
+pretty = true
+show_error_codes = true
+warn_unused_configs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+strict_equality = true
+check_untyped_defs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+no_implicit_optional = true
+
+[[tool.mypy.overrides]]
+module = [
+    "docx",
+    "docx.*",
+    "jsonschema",
+    "reportlab",
+    "reportlab.*",
+    "robot",
+    "robot.*",
+    "textual",
+    "textual.*",
+    "pytest_bdd",
+    "pytest_bdd.*",
+]
+ignore_missing_imports = true
