@@ -75,6 +75,10 @@ def run_from_dict(payload: dict[str, Any]) -> Run:
             duration=payload["test_case"]["duration"],
             application=payload["test_case"].get("application"),
             requirement=payload["test_case"].get("requirement"),
+            project=payload["test_case"].get("project"),
+            environment=payload["test_case"].get("environment"),
+            brand=payload["test_case"].get("brand"),
+            defect=payload["test_case"].get("defect"),
             tags=tuple(payload["test_case"].get("tags", [])),
         ),
         steps=tuple(

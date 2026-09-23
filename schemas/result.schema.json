@@ -98,6 +98,10 @@
         "requirement": {
           "type": ["string", "null"]
         },
+        "project": {"type": ["string", "null"]},
+        "environment": {"type": ["string", "null"]},
+        "brand": {"type": ["string", "null"]},
+        "defect": {"type": ["string", "null"]},
         "tags": {
           "type": "array",
           "items": {

@@ -18,6 +18,8 @@ from robot.libraries.BuiltIn import BuiltIn
 
 from evidoc import api
 from evidoc.domain.enums import Status
+from evidoc.infrastructure.bootstrap import project_root
+from evidoc.infrastructure.config.repository import SchemaValidatedConfigRepository
 
 LOGGER = logging.getLogger("evidoc.listener")
 ROBOT_LISTENER_API_VERSION = 3
@@ -29,16 +31,28 @@ class Listener:
     def __init__(
         self,
         root_dir: str | None = None,
-        storage: str = "file",
+        storage: str | None = None,
         application: str | None = None,
         requirement: str | None = None,
+        project: str | None = None,
+        environment: str | None = None,
+        brand: str | None = None,
+        config_path: str | None = None,
     ) -> None:
-        if storage not in {"file", "base64"}:
+        settings = SchemaValidatedConfigRepository(
+            project_root() / "schemas" / "config.schema.json"
+        ).load(Path(config_path) if config_path else None)
+        selected_storage = storage or settings.get("storage", "file")
+        if selected_storage not in {"file", "base64"}:
             raise ValueError("storage must be 'file' or 'base64'")
-        self.root_dir = root_dir
-        self.storage = storage
-        self.application = application
-        self.requirement = requirement
+        self.root_dir = root_dir or settings.get("metadata_dir")
+        self.storage = selected_storage
+        self.application = application or settings.get("application")
+        self.requirement = requirement or settings.get("requirement")
+        self.project = project or settings.get("project")
+        self.environment = environment or settings.get("environment")
+        self.brand = brand or settings.get("brand")
+        self.defect = settings.get("defect")
         self._test_started_at: ContextVar[float | None] = ContextVar(
             "EVIDOC_LISTENER_TEST_STARTED_AT",
             default=None,
@@ -61,8 +75,13 @@ class Listener:
                     storage=self.storage,
                     application=self.application,
                     requirement=self.requirement,
+                    project=self.project,
+                    environment=self.environment,
+                    brand=self.brand,
                 )
             api.start_test(getattr(data, "name", "Unnamed test"))
+            if self.defect:
+                api.set_defect(self.defect)
             self._test_started_at.set(perf_counter())
         except Exception as exc:  # pragma: no cover
             LOGGER.warning("Unable to start Evidoc test context: %s", exc)

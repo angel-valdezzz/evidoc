@@ -11,12 +11,15 @@ Library    evidoc.robot
 Solicitud del titular
     Open Browser    https://example.org    chrome
     Capture Page Evidence    Credenciales ingresadas    INFO
-    Capture Element Evidence    //div[@id="PanelTitular"]    Panel Titular    INFO
+    Capture Element Evidence    //div[@id="PanelTitular"]    Panel Titular    INFO    include_page=True
+    Set Defect    BUG-123
     Capture Desktop Evidence    Evidencia completa    INFO
     Close Browser
 ```
 
-Sustituye la URL y el locator del ejemplo por los de tu aplicación. Las capturas de página usan el viewport del navegador activo en SeleniumLibrary; las de elemento usan su locator (incluidos prefijos como `css:` o `xpath:`); las de escritorio usan la pantalla completa del sistema y pueden incluir barra de direcciones, fecha y otras ventanas. `orientation=horizontal` o `orientation=vertical` es opcional y ajusta el espacio reservado para la imagen en el reporte. La captura de escritorio puede fallar sin sesión gráfica (por ejemplo, un agente CI sin display); EviDoc registra una advertencia sin fallar el caso.
+Sustituye la URL y el locator del ejemplo por los de tu aplicación. Las capturas de página usan el viewport del navegador activo en SeleniumLibrary; las de elemento usan su locator (incluidos prefijos como `css:` o `xpath:`); las de escritorio usan la pantalla completa del sistema y pueden incluir barra de direcciones, fecha y otras ventanas. Para un elemento, `include_page=True` añade primero la captura de contexto y luego la del elemento; si solo quieres el recorte, omite el argumento. Las imágenes pequeñas se amplían hasta el ancho o alto disponible sin deformarlas. `orientation=horizontal` o `orientation=vertical` ajusta el espacio reservado para la imagen. La captura de escritorio puede fallar sin sesión gráfica (por ejemplo, un agente CI sin display); EviDoc registra una advertencia sin fallar el caso.
+
+El resumen del informe conserva la tabla azul del reporte anterior: Aplicación, Requerimiento, Caso de Prueba, Estatus, Duración y la nueva fila roja **Defecto**. `Set Defect` la rellena para el caso actual; de lo contrario queda vacía. Marca, proyecto, fecha y ambiente aparecen en el encabezado o pie del reporte.
 
 ## Listener y directorios
 
@@ -57,7 +60,25 @@ reports = build(
 print(code, reports)
 ```
 
-`build()` retorna una lista de `Path`. El modo por defecto genera un PDF y un DOCX por caso; `mode="run"` genera un documento por formato para todos los casos. `evidoc generate` permanece disponible para los flujos anteriores.
+`build()` retorna una lista de `Path`. El modo por defecto genera un documento por caso y formato seleccionado; `mode="run"` genera uno combinado por formato. Sin lista explícita y sin configuración, el formato predeterminado es PDF. `evidoc generate` permanece disponible para los flujos anteriores.
+
+## `evidoc.toml`
+
+EviDoc ya soportaba `evidoc.toml` para `generate`. Ahora `build()` y el listener también lo autodetectan en el directorio desde el que ejecutas Robot/Python:
+
+```toml
+metadata_dir = "output/evidoc/metadata"
+output_dir = "output/evidoc/reports"
+application = "D-SAAS-283 Plataforma Operativa De Salud"
+project = "Espartaco"
+environment = "QA"
+brand = "AXA"
+formats = ["pdf", "docx"]
+storage = "base64"  # o "file"
+mode = "single"
+```
+
+En este caso bastan `robot --outputdir output --listener evidoc.listener tests/` y `evidoc build`. Un argumento explícito de listener, CLI o `build()` prevalece sobre el TOML. También acepta `aplicacion`, `proyecto` y `ambiente` como aliases de las claves en inglés; no declares las dos versiones de una clave. `source_dir` y `format` antiguos siguen siendo válidos para `evidoc generate`. `metadata_dir` indica la ruta compartida para el listener y `build`, incluso con Pabot. Puedes pasar `config_path="ruta/evidoc.toml"` a `build()` o `--config ruta/evidoc.toml` al CLI.
 
 ## Almacenamiento y metadatos
 

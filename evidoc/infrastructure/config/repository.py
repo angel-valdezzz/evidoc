@@ -22,6 +22,16 @@ class SchemaValidatedConfigRepository(ConfigRepository):
         if target is None:
             return {}
         raw = self._load_file(target)
+        for alias, canonical in {
+            "aplicacion": "application",
+            "proyecto": "project",
+            "ambiente": "environment",
+            "defecto": "defect",
+        }.items():
+            if alias in raw:
+                if canonical in raw:
+                    raise ValueError(f"Configure either {alias} or {canonical}, not both")
+                raw[canonical] = raw.pop(alias)
         validate(raw, self._schema)
         return raw
 

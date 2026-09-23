@@ -48,4 +48,6 @@ requirement = "LOGIN-002"
     Los valores pasados por CLI/TUI tienen prioridad sobre el archivo de configuracion cuando se proporcionan explicitamente.
 
 !!! note "Alcance actual"
-    `application` y `requirement` existen en el contrato de configuracion, pero la informacion que termina en el reporte sigue dependiendo del resultado capturado por prueba.
+    El listener toma `application`, `requirement`, `project`, `environment` y `brand` de este archivo y los guarda en cada resultado. `Set Defect` puede añadir la referencia de defecto por caso.
+
+Para los campos nuevos `metadata_dir`, `formats` y `storage`, y la integración directa con `build()`, consulta el [Quick Start de evidencia](evidencia-robot.md).

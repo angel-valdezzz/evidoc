@@ -95,12 +95,19 @@ class RobotLibrary:
 
     @keyword("Capture Element Evidence")
     def capture_element_evidence(
-        self, locator: str, title: str, status: str = "INFO", orientation: str | None = None
+        self,
+        locator: str,
+        title: str,
+        status: str = "INFO",
+        orientation: str | None = None,
+        include_page: bool = False,
     ) -> str | None:
         try:
-            return self._capture(
-                self._selenium().find_element(locator), title, status, "element", orientation
-            )
+            library = self._selenium()
+            element = library.find_element(locator)
+            if include_page:
+                self._capture(library.driver, f"Contexto: {title}", status, "page", orientation)
+            return self._capture(element, title, status, "element", orientation)
         except Exception as exc:
             self._warning(f"Unable to capture element evidence: {exc}")
             return None
@@ -210,6 +217,11 @@ class RobotLibrary:
         """<p>Agrega un mensaje de error al paso actual.</p>"""
         api.log_error(message)
 
+    @keyword("Set Defect")
+    def set_defect(self, defect: str) -> None:
+        """Set the defect reference for the current test's summary row."""
+        api.set_defect(defect)
+
 
 _LIBRARY = RobotLibrary()
 
@@ -223,9 +235,21 @@ def capture_page_evidence(
 
 @keyword("Capture Element Evidence")
 def capture_element_evidence(
-    locator: str, title: str, status: str = "INFO", orientation: str | None = None
+    locator: str,
+    title: str,
+    status: str = "INFO",
+    orientation: str | None = None,
+    include_page: bool = False,
 ) -> str | None:
-    return cast(str | None, _LIBRARY.capture_element_evidence(locator, title, status, orientation))
+    return cast(
+        str | None,
+        _LIBRARY.capture_element_evidence(locator, title, status, orientation, include_page),
+    )
+
+
+@keyword("Set Defect")
+def set_defect(defect: str) -> None:
+    _LIBRARY.set_defect(defect)
 
 
 @keyword("Capture Desktop Evidence")

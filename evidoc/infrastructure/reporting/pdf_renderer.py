@@ -27,13 +27,17 @@ from evidoc.application.report_renderer import ReportRenderer
 from evidoc.domain.artifact_type import ArtifactType
 from evidoc.domain.run import Run
 from evidoc.infrastructure.reporting.helpers import (
+    fitted_size,
     image_bytes,
+    report_date,
     safe_name,
     status_color,
     summary_rows,
 )
 
-NAVY = colors.HexColor("#2c3e50")
+BLUE = colors.HexColor("#2f50c5")
+RED = colors.HexColor("#c62828")
+NAVY = colors.HexColor("#242a35")
 PALE = colors.HexColor("#f8f9fa")
 BORDER = colors.HexColor("#dee2e6")
 
@@ -64,19 +68,26 @@ class PdfReportRenderer(ReportRenderer):
             if index:
                 story.append(PageBreak())
             story += [
+                Paragraph(
+                    f'<para align="right">Fecha: {report_date(result)}</para>',
+                    styles["BodyText"],
+                ),
+                Spacer(1, 0.3 * cm),
                 Paragraph("Reporte de Ejecución Automatizada", styles["Title"]),
-                Spacer(1, 0.4 * cm),
+                Spacer(1, 0.9 * cm),
                 Paragraph("Resumen De Ejecución", styles["Heading2"]),
-                Spacer(1, 0.15 * cm),
+                Spacer(1, 0.5 * cm),
             ]
             rows = [[label, value] for label, value in summary_rows(result)]
-            table = Table(rows, colWidths=[3.5 * cm, 13.5 * cm], hAlign="LEFT")
+            table = Table(rows, colWidths=[8.2 * cm, 8.8 * cm], hAlign="LEFT")
             table.setStyle(
                 TableStyle(
                     [
-                        ("BACKGROUND", (0, 0), (0, -1), NAVY),
+                        ("BACKGROUND", (0, 0), (0, -2), BLUE),
+                        ("BACKGROUND", (0, -1), (0, -1), RED),
+                        ("BACKGROUND", (1, -1), (1, -1), colors.HexColor("#fff5f5")),
                         ("TEXTCOLOR", (0, 0), (0, -1), colors.white),
-                        ("ROWBACKGROUNDS", (1, 0), (1, -1), [colors.white, PALE]),
+                        ("ROWBACKGROUNDS", (1, 0), (1, -2), [colors.white, PALE]),
                         ("GRID", (0, 0), (-1, -1), 0.4, BORDER),
                         ("VALIGN", (0, 0), (-1, -1), "TOP"),
                         ("TOPPADDING", (0, 0), (-1, -1), 7),
@@ -84,7 +95,9 @@ class PdfReportRenderer(ReportRenderer):
                     ]
                 )
             )
-            story += [table, Spacer(1, 0.6 * cm)]
+            story.append(table)
+            if result.steps:
+                story.append(PageBreak())
             artifacts = {artifact.id: artifact for artifact in result.artifacts}
             image_count = 0
             for step in result.steps:
@@ -98,7 +111,13 @@ class PdfReportRenderer(ReportRenderer):
                 )
                 if starts_new_page:
                     story.append(PageBreak())
-                story.append(Paragraph(escape(step.title), styles["Heading2"]))
+                story.append(
+                    Paragraph(
+                        f'<font color="#2f50c5">&#9830;</font> {escape(step.title)} '
+                        '<font color="#2f50c5">&#9830;</font>',
+                        styles["Heading2"],
+                    )
+                )
                 story.append(
                     Paragraph(
                         f'<font color="{status_color(step.status)}">{step.status.value}</font>',
@@ -121,9 +140,9 @@ class PdfReportRenderer(ReportRenderer):
                         story.append(PageBreak())
                     image_count += 1
                     starts_new_page = False
-                    block: list = [
-                        Paragraph(escape(artifact.title or "Evidencia"), styles["BodyText"])
-                    ]
+                    block: list = []
+                    if artifact.title and artifact.title != step.title:
+                        block.append(Paragraph(escape(artifact.title), styles["BodyText"]))
                     if artifact.description:
                         block.append(Paragraph(escape(artifact.description), styles["BodyText"]))
                     data = image_bytes(source_dir, result, artifact)
@@ -131,9 +150,11 @@ class PdfReportRenderer(ReportRenderer):
                         reader = ImageReader(BytesIO(data))
                         width, height = reader.getSize()
                         max_height = 16 * cm if artifact.orientation == "vertical" else 12 * cm
-                        ratio = min(17 * cm / width, max_height / height, 1)
+                        display_width, display_height = fitted_size(
+                            width, height, 17 * cm, max_height
+                        )
                         block.append(
-                            Image(BytesIO(data), width=width * ratio, height=height * ratio)
+                            Image(BytesIO(data), width=display_width, height=display_height)
                         )
                     else:
                         block.append(Paragraph("Imagen no disponible", styles["BodyText"]))
@@ -149,17 +170,21 @@ class PdfReportRenderer(ReportRenderer):
             bottomMargin=2 * cm,
             title="Reporte de Ejecución Automatizada",
         )
-        doc.build(story, onFirstPage=self._header, onLaterPages=self._header)
+
+        def header(canvas: Any, document: Any) -> None:
+            self._header(canvas, document, results[0])
+
+        doc.build(story, onFirstPage=header, onLaterPages=header)
 
     @staticmethod
-    def _header(canvas: Any, doc: Any) -> None:
+    def _header(canvas: Any, doc: Any, result: Run) -> None:
         canvas.saveState()
         canvas.setFillColor(NAVY)
-        canvas.rect(0, A4[1] - 1 * cm, A4[0], 1 * cm, fill=1, stroke=0)
-        canvas.setFillColor(colors.white)
         canvas.setFont("Helvetica-Bold", 10)
-        canvas.drawString(2 * cm, A4[1] - 0.65 * cm, "EviDoc")
-        canvas.setFillColor(NAVY)
+        canvas.drawString(2 * cm, A4[1] - 1.15 * cm, result.test_case.brand or "EviDoc")
+        canvas.setFont("Helvetica", 9)
+        canvas.drawRightString(A4[0] - 2 * cm, A4[1] - 1.15 * cm, result.test_case.project or "")
         canvas.setFont("Helvetica", 8)
-        canvas.drawRightString(A4[0] - 2 * cm, 0.9 * cm, f"{doc.page}")
+        canvas.drawString(2 * cm, 0.9 * cm, f"Ambiente: {result.test_case.environment or '—'}")
+        canvas.drawRightString(A4[0] - 2 * cm, 0.9 * cm, f"Página {doc.page}")
         canvas.restoreState()

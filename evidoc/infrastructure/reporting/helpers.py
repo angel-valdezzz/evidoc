@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import re
+from datetime import datetime
 from pathlib import Path
 
 from evidoc.domain.artifact import Artifact
@@ -21,13 +22,23 @@ def status_color(status: Status) -> str:
 
 def summary_rows(result: Run) -> list[tuple[str, str]]:
     case = result.test_case
+    seconds = round(case.duration)
     return [
         ("Aplicación", case.application or "—"),
-        ("Requerimiento", case.requirement or "—"),
+        ("Requerimiento", case.requirement or ""),
         ("Caso de Prueba", case.name),
         ("Estatus", case.status.value),
-        ("Duración", f"{case.duration:.2f} s"),
+        ("Duración", f"{seconds // 3600:02}:{seconds // 60 % 60:02}:{seconds % 60:02}"),
+        ("Defecto", case.defect or ""),
     ]
+
+
+def report_date(result: Run) -> str:
+    return (
+        datetime.fromisoformat(result.generated_at.replace("Z", "+00:00"))
+        .astimezone()
+        .strftime("%d/%m/%Y %H:%M")
+    )
 
 
 def image_bytes(source_dir: Path, result: Run, artifact: Artifact) -> bytes | None:
@@ -44,3 +55,13 @@ def image_bytes(source_dir: Path, result: Run, artifact: Artifact) -> bytes | No
 
 def safe_name(name: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]+", "_", name).strip("._") or "test"
+
+
+def fitted_size(
+    width: float, height: float, max_width: float, max_height: float
+) -> tuple[float, float]:
+    """Fill the available area without cropping or distorting small element captures."""
+    if width <= 0 or height <= 0:
+        raise ValueError("Image dimensions must be positive")
+    scale = min(max_width / width, max_height / height)
+    return width * scale, height * scale

@@ -62,16 +62,18 @@ def generate(
 
 @app.command("build")
 def build_command(
-    input_dir: Path = typer.Option(Path("output/evidoc/metadata"), "--input-dir"),
-    output_dir: Path = typer.Option(Path("output/evidoc/reports"), "--output-dir"),
-    formats: str = typer.Option("pdf,docx", "--formats", help="Comma-separated: pdf,docx"),
-    mode: GenerateMode = typer.Option(GenerateMode.SINGLE, "--mode", case_sensitive=False),
+    input_dir: Path | None = typer.Option(None, "--input-dir"),
+    output_dir: Path | None = typer.Option(None, "--output-dir"),
+    formats: str | None = typer.Option(None, "--formats", help="Comma-separated: pdf,docx"),
+    mode: GenerateMode | None = typer.Option(None, "--mode", case_sensitive=False),
+    config: Path | None = typer.Option(None, "--config"),
 ) -> None:
     for report in build(
         input_dir=input_dir,
         output_dir=output_dir,
-        formats=[item.strip() for item in formats.split(",")],
-        mode=mode.value,
+        formats=[item.strip() for item in formats.split(",")] if formats else None,
+        mode=mode.value if mode else None,
+        config_path=config,
     ):
         typer.echo(str(report))
 

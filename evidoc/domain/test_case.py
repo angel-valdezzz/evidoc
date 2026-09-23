@@ -13,4 +13,8 @@ class TestCase:
     duration: float
     application: str | None = None
     requirement: str | None = None
+    project: str | None = None
+    environment: str | None = None
+    brand: str | None = None
+    defect: str | None = None
     tags: tuple[str, ...] = ()

@@ -55,6 +55,10 @@ class Run:
                 "duration": self.test_case.duration,
                 "application": self.test_case.application,
                 "requirement": self.test_case.requirement,
+                "project": self.test_case.project,
+                "environment": self.test_case.environment,
+                "brand": self.test_case.brand,
+                "defect": self.test_case.defect,
                 "tags": list(self.test_case.tags),
             },
             "steps": [

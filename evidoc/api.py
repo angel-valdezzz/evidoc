@@ -18,6 +18,7 @@ from evidoc.domain.report_format import ReportFormat
 from evidoc.domain.status import Status
 from evidoc.infrastructure.bootstrap import build_generate_use_case, project_root
 from evidoc.infrastructure.capture import screenshot_bytes
+from evidoc.infrastructure.config.repository import SchemaValidatedConfigRepository
 from evidoc.infrastructure.filesystem.filesystem_artifact_storage import FilesystemArtifactStorage
 from evidoc.infrastructure.filesystem.filesystem_result_repository import FilesystemResultRepository
 
@@ -31,6 +32,9 @@ class ContextOptions(TypedDict):
     storage: str
     application: str | None
     requirement: str | None
+    project: str | None
+    environment: str | None
+    brand: str | None
 
 
 _CURRENT_API: ContextVar[EvidocAPI | None] = ContextVar("EVIDOC_CURRENT_API", default=None)
@@ -49,6 +53,9 @@ class EvidocAPI:
         storage: str = "file",
         application: str | None = None,
         requirement: str | None = None,
+        project: str | None = None,
+        environment: str | None = None,
+        brand: str | None = None,
     ) -> None:
         if storage not in {"file", "base64"}:
             raise ValueError("storage must be 'file' or 'base64'")
@@ -60,6 +67,10 @@ class EvidocAPI:
         self._storage = storage
         self._application = application
         self._requirement = requirement
+        self._project = project
+        self._environment = environment
+        self._brand = brand
+        self._defect: str | None = None
         self._run_id: str | None = None
         self._current_test_name: str | None = None
         self._current_test_id: str | None = None
@@ -89,6 +100,7 @@ class EvidocAPI:
             self._current_test_name = test_name or "Unnamed test"
             self._steps = []
             self._artifacts = []
+            self._defect = None
             if self._storage == "file":
                 self._artifacts_dir().mkdir(parents=True, exist_ok=True)
             return self._current_test_id
@@ -113,6 +125,10 @@ class EvidocAPI:
                     "duration": max(float(duration), 0.0),
                     "application": self._application,
                     "requirement": self._requirement,
+                    "project": self._project,
+                    "environment": self._environment,
+                    "brand": self._brand,
+                    "defect": self._defect,
                     "tags": [],
                 },
                 "steps": [
@@ -182,6 +198,12 @@ class EvidocAPI:
 
     def log_error(self, message: str) -> None:
         self._log_message(message, Status.FAIL)
+
+    def set_defect(self, defect: str) -> None:
+        if self._current_test_id is None:
+            self._warn("No active test context for defect.")
+            return
+        self._defect = defect or None
 
     def capture_screenshot(
         self,
@@ -373,6 +395,9 @@ def configure_context(
     storage: str = "file",
     application: str | None = None,
     requirement: str | None = None,
+    project: str | None = None,
+    environment: str | None = None,
+    brand: str | None = None,
 ) -> EvidocAPI:
     options: ContextOptions = {
         "root_dir": Path(root_dir),
@@ -381,6 +406,9 @@ def configure_context(
         "storage": storage,
         "application": application,
         "requirement": requirement,
+        "project": project,
+        "environment": environment,
+        "brand": brand,
     }
     _CURRENT_OPTIONS.set(options)
     api = EvidocAPI(**options)
@@ -426,6 +454,10 @@ def log_error(message: str) -> None:
     get_current_api().log_error(message)
 
 
+def set_defect(defect: str) -> None:
+    get_current_api().set_defect(defect)
+
+
 def capture_screenshot(
     driver: Any,
     element: Any | None = None,
@@ -465,22 +497,35 @@ def capture_image(
 
 
 def build(
-    input_dir: str | Path = "output/evidoc/metadata",
-    output_dir: str | Path = "output/evidoc/reports",
-    formats: tuple[str, ...] | list[str] = ("pdf",),
-    mode: str = "single",
+    input_dir: str | Path | None = None,
+    output_dir: str | Path | None = None,
+    formats: tuple[str, ...] | list[str] | None = None,
+    mode: str | None = None,
+    config_path: str | Path | None = None,
 ) -> list[Path]:
     """Generate reports from persisted metadata in the current Python process."""
+    settings = SchemaValidatedConfigRepository(
+        project_root() / "schemas" / "config.schema.json"
+    ).load(Path(config_path) if config_path else None)
+    source = (
+        input_dir
+        or settings.get("metadata_dir")
+        or settings.get("source_dir")
+        or "output/evidoc/metadata"
+    )
+    destination = output_dir or settings.get("output_dir") or "output/evidoc/reports"
+    selected_formats = formats or settings.get("formats") or [settings.get("format", "pdf")]
+    selected_mode = mode or settings.get("mode") or "single"
     _, generate = build_generate_use_case()
     return [
         path
-        for fmt in formats
+        for fmt in selected_formats
         for path in generate.execute(
             EvidocConfig(
-                source_dir=Path(input_dir),
-                output_dir=Path(output_dir),
+                source_dir=Path(source),
+                output_dir=Path(destination),
                 format=ReportFormat(fmt.lower()),
-                mode=GenerateMode(mode.lower()),
+                mode=GenerateMode(selected_mode.lower()),
             )
         )
     ]

@@ -10,6 +10,7 @@ from evidoc import build
 from evidoc.api import EvidocAPI
 from evidoc.infrastructure.bootstrap import project_root
 from evidoc.infrastructure.filesystem.filesystem_result_repository import FilesystemResultRepository
+from evidoc.infrastructure.reporting.helpers import fitted_size
 from evidoc.interfaces.cli.main import app
 from evidoc.listener import Listener
 from PIL import Image
@@ -53,6 +54,9 @@ def test_storage_and_both_renderers(tmp_path: Path, storage: str) -> None:
     assert "Reporte de Ejecución Automatizada" in [p.text for p in document.paragraphs]
     assert "Portal" in [cell.text for row in document.tables[0].rows for cell in row.cells]
     assert len(document.inline_shapes) == 3
+    assert [row.cells[0].text for row in document.tables[0].rows][-1] == "Defecto"
+    assert document.tables[0].rows[-1].cells[1].text == ""
+    assert 'w:fill="C62828"' in document.tables[0].rows[-1].cells[0]._tc.xml
     from pypdf import PdfReader
 
     pdf_text = "\n".join(
@@ -108,7 +112,7 @@ Library    evidoc.robot
 *** Test Cases ***
 Capture all
     Capture Page Evidence    Credenciales ingresadas    INFO
-    Capture Element Evidence    //div[@id='PanelTitular']    Panel Titular    INFO    orientation=horizontal
+    Capture Element Evidence    //div[@id='PanelTitular']    Panel Titular    INFO    orientation=horizontal    include_page=True
     Capture Desktop Evidence    Evidencia completa    INFO
 """,
         encoding="utf-8",
@@ -124,8 +128,59 @@ Capture all
         project_root() / "schemas" / "result.schema.json"
     ).load_test_results(output / "evidoc" / "metadata")
     assert len(results) == 1
-    assert [a.capture for a in results[0].artifacts] == ["page", "element", "desktop"]
-    assert results[0].artifacts[1].orientation == "horizontal"
+    assert [a.capture for a in results[0].artifacts] == ["page", "page", "element", "desktop"]
+    assert results[0].artifacts[2].orientation == "horizontal"
+    assert results[0].steps[1].title == "Contexto: Panel Titular"
+
+
+def test_small_element_uses_available_report_space() -> None:
+    assert fitted_size(80, 50, 480, 340) == (480, 300)
+    assert fitted_size(800, 50, 480, 340) == (480, 30)
+
+
+def test_toml_config_applies_to_listener_and_build(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "evidoc.toml").write_text(
+        'aplicacion = "Salud"\nproyecto = "Espartaco"\nenvironment = "QA"\nbrand = "AXA"\n'
+        'formats = ["pdf", "docx"]\nstorage = "base64"\nmetadata_dir = "metadata"\n'
+        'output_dir = "reports"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr("evidoc.robot.desktop_bytes", png)
+    suite = tmp_path / "test.robot"
+    suite.write_text(
+        "*** Settings ***\nLibrary    evidoc.robot\n*** Test Cases ***\nCaso real\n"
+        "    Set Defect    BUG-17\n    Capture Desktop Evidence    Evidencia\n",
+        encoding="utf-8",
+    )
+    assert (
+        run(
+            str(suite),
+            listener=Listener(),
+            outputdir=str(tmp_path / "robot"),
+            log="NONE",
+            report="NONE",
+        )
+        == 0
+    )
+    results = FilesystemResultRepository(
+        project_root() / "schemas" / "result.schema.json"
+    ).load_test_results(tmp_path / "metadata")
+    assert len(results) == 1
+    assert results[0].test_case.application == "Salud"
+    assert results[0].test_case.project == "Espartaco"
+    assert results[0].test_case.defect == "BUG-17"
+    assert results[0].artifacts[0].data
+    outputs = build()
+    assert {output.suffix for output in outputs} == {".pdf", ".docx"}
+    assert all(output.parent.resolve() == tmp_path / "reports" for output in outputs)
+    cli = CliRunner().invoke(app, ["build", "--output-dir", str(tmp_path / "cli-reports")])
+    assert cli.exit_code == 0, cli.stdout
+    assert {output.name for output in outputs} == {
+        output.name for output in (tmp_path / "cli-reports").iterdir()
+    }
 
 
 def test_robot_listener_storage_configuration(

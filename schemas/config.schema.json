@@ -5,10 +5,17 @@
   "additionalProperties": false,
   "properties": {
     "source_dir": { "type": "string" },
+    "metadata_dir": { "type": "string" },
     "output_dir": { "type": "string" },
     "format": { "type": "string", "enum": ["pdf", "docx"] },
+    "formats": { "type": "array", "items": {"type": "string", "enum": ["pdf", "docx"]}, "minItems": 1, "uniqueItems": true },
     "mode": { "type": "string", "enum": ["single", "run"] },
     "application": { "type": ["string", "null"] },
-    "requirement": { "type": ["string", "null"] }
+    "requirement": { "type": ["string", "null"] },
+    "project": { "type": ["string", "null"] },
+    "environment": { "type": ["string", "null"] },
+    "brand": { "type": ["string", "null"] },
+    "defect": { "type": ["string", "null"] },
+    "storage": { "type": "string", "enum": ["file", "base64"] }
   }
 }
