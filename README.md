@@ -134,3 +134,18 @@ Capture Evidence
 ```
 
 Un ejemplo ejecutable end-to-end con un driver demo para screenshots se encuentra en `examples/robot/evidoc_example.robot`.
+
+## Evidencia de Robot a PDF/DOCX
+
+```robotframework
+*** Settings ***
+Library    evidoc.robot
+
+*** Test Cases ***
+Ejemplo
+    Capture Page Evidence    Credenciales ingresadas    INFO
+    Capture Element Evidence    //div[@id="PanelTitular"]    Panel Titular    INFO
+    Capture Desktop Evidence    Evidencia completa    INFO
+```
+
+Ejecuta con `robot --outputdir output --listener evidoc.listener tests/` (para página y elemento carga también SeleniumLibrary y abre un navegador). Después usa `evidoc build --input-dir output/evidoc/metadata --output-dir output/evidoc/reports --formats pdf,docx`, o `from evidoc import build` dentro de tu pipeline Python. [Quick Start completo](docs/primeros-pasos/evidencia-robot.md).

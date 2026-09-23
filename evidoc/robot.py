@@ -25,9 +25,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, cast
 
-from evidoc import api
+from robot.api import logger
 from robot.api.deco import keyword, library
 from robot.libraries.BuiltIn import BuiltIn
+
+from evidoc import api
+from evidoc.infrastructure.capture import desktop_bytes, screenshot_bytes
 
 ROBOT_LIBRARY_SCOPE = "GLOBAL"
 ROBOT_AUTO_KEYWORDS = False
@@ -51,6 +54,72 @@ class RobotLibrary:
     <p>Las keywords escriben evidencia sobre el contexto de prueba activo. Si no
     existe un contexto abierto, la API subyacente registra una advertencia.</p>
     """
+
+    @staticmethod
+    def _warning(message: str) -> None:
+        api.get_current_api()._warn(message)
+        logger.warn(message)
+
+    @staticmethod
+    def _selenium() -> Any:
+        library = BuiltIn().get_library_instance("SeleniumLibrary")
+        if getattr(library, "driver", None) is None:
+            raise RuntimeError("SeleniumLibrary has no active browser")
+        return library
+
+    @staticmethod
+    def _capture(
+        target: Any, title: str, status: str, kind: str, orientation: str | None
+    ) -> str | None:
+        try:
+            return api.capture_image(
+                screenshot_bytes(target),
+                title=title,
+                status=status,
+                capture=kind,
+                orientation=orientation,
+            )
+        except Exception as exc:
+            RobotLibrary._warning(f"Unable to capture {kind} evidence: {exc}")
+            return None
+
+    @keyword("Capture Page Evidence")
+    def capture_page_evidence(
+        self, title: str, status: str = "INFO", orientation: str | None = None
+    ) -> str | None:
+        try:
+            return self._capture(self._selenium().driver, title, status, "page", orientation)
+        except Exception as exc:
+            self._warning(f"Unable to capture page evidence: {exc}")
+            return None
+
+    @keyword("Capture Element Evidence")
+    def capture_element_evidence(
+        self, locator: str, title: str, status: str = "INFO", orientation: str | None = None
+    ) -> str | None:
+        try:
+            return self._capture(
+                self._selenium().find_element(locator), title, status, "element", orientation
+            )
+        except Exception as exc:
+            self._warning(f"Unable to capture element evidence: {exc}")
+            return None
+
+    @keyword("Capture Desktop Evidence")
+    def capture_desktop_evidence(
+        self, title: str, status: str = "INFO", orientation: str | None = None
+    ) -> str | None:
+        try:
+            return api.capture_image(
+                desktop_bytes(),
+                title=title,
+                status=status,
+                capture="desktop",
+                orientation=orientation,
+            )
+        except Exception as exc:
+            self._warning(f"Unable to capture desktop evidence: {exc}")
+            return None
 
     @keyword("Log Step")
     def log_step(self, title: str, status: str = "INFO") -> None:
@@ -102,7 +171,10 @@ class RobotLibrary:
         """
         target = driver
         if library:
-            target = BuiltIn().get_library_instance(library)
+            instance = BuiltIn().get_library_instance(library)
+            target = getattr(instance, "driver", None) or instance
+            if isinstance(element, str) and hasattr(instance, "find_element"):
+                element = instance.find_element(element)
         if target is None:
             raise ValueError("Capture Screenshot requires a driver or an explicit library name.")
         return api.capture_screenshot(target, element=element, title=title, description=description)
@@ -140,6 +212,27 @@ class RobotLibrary:
 
 
 _LIBRARY = RobotLibrary()
+
+
+@keyword("Capture Page Evidence")
+def capture_page_evidence(
+    title: str, status: str = "INFO", orientation: str | None = None
+) -> str | None:
+    return cast(str | None, _LIBRARY.capture_page_evidence(title, status, orientation))
+
+
+@keyword("Capture Element Evidence")
+def capture_element_evidence(
+    locator: str, title: str, status: str = "INFO", orientation: str | None = None
+) -> str | None:
+    return cast(str | None, _LIBRARY.capture_element_evidence(locator, title, status, orientation))
+
+
+@keyword("Capture Desktop Evidence")
+def capture_desktop_evidence(
+    title: str, status: str = "INFO", orientation: str | None = None
+) -> str | None:
+    return cast(str | None, _LIBRARY.capture_desktop_evidence(title, status, orientation))
 
 
 @keyword("Log Step")

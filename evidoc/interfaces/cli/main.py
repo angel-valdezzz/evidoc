@@ -4,6 +4,7 @@ from pathlib import Path
 
 import typer
 
+from evidoc import build
 from evidoc.documentation import available_documents, open_documentation
 from evidoc.domain.generate_mode import GenerateMode
 from evidoc.domain.report_format import ReportFormat
@@ -56,6 +57,22 @@ def generate(
         typer.echo("No results found.")
         raise typer.Exit(code=0)
     for report in outputs:
+        typer.echo(str(report))
+
+
+@app.command("build")
+def build_command(
+    input_dir: Path = typer.Option(Path("output/evidoc/metadata"), "--input-dir"),
+    output_dir: Path = typer.Option(Path("output/evidoc/reports"), "--output-dir"),
+    formats: str = typer.Option("pdf,docx", "--formats", help="Comma-separated: pdf,docx"),
+    mode: GenerateMode = typer.Option(GenerateMode.SINGLE, "--mode", case_sensitive=False),
+) -> None:
+    for report in build(
+        input_dir=input_dir,
+        output_dir=output_dir,
+        formats=[item.strip() for item in formats.split(",")],
+        mode=mode.value,
+    ):
         typer.echo(str(report))
 
 

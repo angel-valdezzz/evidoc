@@ -7,6 +7,9 @@ from evidoc.domain.artifact_type import ArtifactType
 class Artifact:
     id: str
     type: ArtifactType
-    path: str
+    path: str | None = None
     title: str | None = None
     description: str | None = None
+    data: str | None = None
+    capture: str | None = None
+    orientation: str | None = None

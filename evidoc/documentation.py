@@ -76,7 +76,7 @@ def open_documentation(name: str) -> Path:
         raise FileNotFoundError(f"Bundled document '{name}' was not found at '{document_path}'.")
 
     if os.name == "nt":
-        os.startfile(str(document_path))
+        os.startfile(str(document_path))  # type: ignore[attr-defined]  # Windows-only API
         return document_path
     if sys.platform == "darwin":
         subprocess.run(["open", str(document_path)], check=True)

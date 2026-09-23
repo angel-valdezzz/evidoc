@@ -1,17 +1,23 @@
 from __future__ import annotations
 
+import base64
 import logging
 from contextvars import ContextVar
 from pathlib import Path
 from typing import Any, TypedDict
+from uuid import uuid4
 
 from evidoc.application.in_memory_warning_sink import InMemoryWarningSink
 from evidoc.application.warning_sink import WarningSink
 from evidoc.domain import run_from_dict
 from evidoc.domain.artifact import Artifact
 from evidoc.domain.artifact_type import ArtifactType
+from evidoc.domain.evidoc_config import EvidocConfig
+from evidoc.domain.generate_mode import GenerateMode
+from evidoc.domain.report_format import ReportFormat
 from evidoc.domain.status import Status
-from evidoc.infrastructure.bootstrap import project_root
+from evidoc.infrastructure.bootstrap import build_generate_use_case, project_root
+from evidoc.infrastructure.capture import screenshot_bytes
 from evidoc.infrastructure.filesystem.filesystem_artifact_storage import FilesystemArtifactStorage
 from evidoc.infrastructure.filesystem.filesystem_result_repository import FilesystemResultRepository
 
@@ -22,6 +28,9 @@ class ContextOptions(TypedDict):
     root_dir: Path | str
     result_schema_path: Path | None
     warning_sink: WarningSink | None
+    storage: str
+    application: str | None
+    requirement: str | None
 
 
 _CURRENT_API: ContextVar[EvidocAPI | None] = ContextVar("EVIDOC_CURRENT_API", default=None)
@@ -37,12 +46,20 @@ class EvidocAPI:
         root_dir: Path | str = Path("./results"),
         result_schema_path: Path | None = None,
         warning_sink: WarningSink | None = None,
+        storage: str = "file",
+        application: str | None = None,
+        requirement: str | None = None,
     ) -> None:
+        if storage not in {"file", "base64"}:
+            raise ValueError("storage must be 'file' or 'base64'")
         schema_path = result_schema_path or project_root() / "schemas" / "result.schema.json"
         self._root_dir = Path(root_dir)
         self._result_repository = FilesystemResultRepository(schema_path)
         self._artifact_storage = FilesystemArtifactStorage()
         self._warning_sink = warning_sink or InMemoryWarningSink()
+        self._storage = storage
+        self._application = application
+        self._requirement = requirement
         self._run_id: str | None = None
         self._current_test_name: str | None = None
         self._current_test_id: str | None = None
@@ -72,7 +89,8 @@ class EvidocAPI:
             self._current_test_name = test_name or "Unnamed test"
             self._steps = []
             self._artifacts = []
-            self._artifacts_dir().mkdir(parents=True, exist_ok=True)
+            if self._storage == "file":
+                self._artifacts_dir().mkdir(parents=True, exist_ok=True)
             return self._current_test_id
         except Exception as exc:  # pragma: no cover
             self._warn(f"Unable to start test '{test_name}': {exc}")
@@ -93,8 +111,8 @@ class EvidocAPI:
                     "name": self._current_test_name,
                     "status": safe_status.value,
                     "duration": max(float(duration), 0.0),
-                    "application": None,
-                    "requirement": None,
+                    "application": self._application,
+                    "requirement": self._requirement,
                     "tags": [],
                 },
                 "steps": [
@@ -120,6 +138,9 @@ class EvidocAPI:
                         "path": artifact.path,
                         "title": artifact.title,
                         "description": artifact.description,
+                        **({"data": artifact.data} if artifact.data is not None else {}),
+                        **({"capture": artifact.capture} if artifact.capture else {}),
+                        **({"orientation": artifact.orientation} if artifact.orientation else {}),
                     }
                     for artifact in self._artifacts
                 ],
@@ -174,6 +195,12 @@ class EvidocAPI:
                 self._warn("No active test context for screenshot capture.")
                 return None
             target = element or driver
+            if self._storage == "base64":
+                return self.capture_image(
+                    screenshot_bytes(target),
+                    title=title or "Screenshot",
+                    description=description,
+                )
             destination = self._artifacts_dir() / f"screenshot-{self._generate_test_id()}.png"
             if hasattr(target, "screenshot"):
                 if target.screenshot(str(destination)) is False:
@@ -191,6 +218,54 @@ class EvidocAPI:
             )
         except Exception as exc:
             self._warn(f"Unable to capture screenshot: {exc}")
+            return None
+
+    def capture_image(
+        self,
+        image: bytes,
+        *,
+        title: str,
+        status: str = "INFO",
+        capture: str = "page",
+        orientation: str | None = None,
+        description: str | None = None,
+    ) -> str | None:
+        """Register PNG bytes independently of the capture adapter."""
+        try:
+            if self._current_test_id is None:
+                self._warn("No active test context for image capture.")
+                return None
+            if not image:
+                raise ValueError("Empty image")
+            if orientation not in {None, "horizontal", "vertical"}:
+                raise ValueError("orientation must be horizontal or vertical")
+            artifact_id = uuid4().hex
+            path: str | None = None
+            data: str | None = None
+            if self._storage == "file":
+                destination = self._artifacts_dir() / f"{artifact_id}.png"
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_bytes(image)
+                path = f"artifacts/{destination.name}"
+            else:
+                data = base64.b64encode(image).decode("ascii")
+            self.log_step(title, status)
+            self._artifacts.append(
+                Artifact(
+                    artifact_id,
+                    ArtifactType.IMAGE,
+                    path,
+                    title,
+                    description,
+                    data,
+                    capture,
+                    orientation,
+                )
+            )
+            self._steps[-1]["artifact_ids"].append(artifact_id)
+            return artifact_id
+        except Exception as exc:
+            self._warn(f"Unable to capture image: {exc}")
             return None
 
     def attach_file(self, path: str | Path, description: str | None = None) -> str | None:
@@ -295,11 +370,17 @@ def configure_context(
     root_dir: Path | str = Path("./results"),
     result_schema_path: Path | None = None,
     warning_sink: WarningSink | None = None,
+    storage: str = "file",
+    application: str | None = None,
+    requirement: str | None = None,
 ) -> EvidocAPI:
     options: ContextOptions = {
         "root_dir": Path(root_dir),
         "result_schema_path": result_schema_path,
         "warning_sink": warning_sink,
+        "storage": storage,
+        "application": application,
+        "requirement": requirement,
     }
     _CURRENT_OPTIONS.set(options)
     api = EvidocAPI(**options)
@@ -362,3 +443,44 @@ def attach_file(path: str | Path, description: str | None = None) -> str | None:
 
 def attach_artifact(path: str | Path, description: str | None = None) -> str | None:
     return attach_file(path, description)
+
+
+def capture_image(
+    image: bytes,
+    *,
+    title: str,
+    status: str = "INFO",
+    capture: str = "page",
+    orientation: str | None = None,
+    description: str | None = None,
+) -> str | None:
+    return get_current_api().capture_image(
+        image,
+        title=title,
+        status=status,
+        capture=capture,
+        orientation=orientation,
+        description=description,
+    )
+
+
+def build(
+    input_dir: str | Path = "output/evidoc/metadata",
+    output_dir: str | Path = "output/evidoc/reports",
+    formats: tuple[str, ...] | list[str] = ("pdf",),
+    mode: str = "single",
+) -> list[Path]:
+    """Generate reports from persisted metadata in the current Python process."""
+    _, generate = build_generate_use_case()
+    return [
+        path
+        for fmt in formats
+        for path in generate.execute(
+            EvidocConfig(
+                source_dir=Path(input_dir),
+                output_dir=Path(output_dir),
+                format=ReportFormat(fmt.lower()),
+                mode=GenerateMode(mode.lower()),
+            )
+        )
+    ]

@@ -6,6 +6,7 @@ Esta seccion te lleva de cero a un primer reporte funcional.
 
 - [Instalacion](instalacion.md)
 - [Recorrido guiado](recorrido-guiado.md)
+- [Quick Start de evidencia Robot](evidencia-robot.md)
 - [Configuracion basica](configuracion-basica.md)
 
 </div>

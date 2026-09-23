@@ -137,7 +137,11 @@
     },
     "artifact": {
       "type": "object",
-      "required": ["id", "type", "path"],
+      "required": ["id", "type"],
+      "anyOf": [
+        {"required": ["path"], "properties": {"path": {"type": "string"}}},
+        {"required": ["data"], "properties": {"data": {"type": "string"}}}
+      ],
       "additionalProperties": false,
       "properties": {
         "id": {
@@ -147,9 +151,12 @@
           "$ref": "#/$defs/artifact_type"
         },
         "path": {
-          "type": "string",
+          "type": ["string", "null"],
           "minLength": 1
         },
+        "data": {"type": ["string", "null"], "minLength": 1},
+        "capture": {"type": ["string", "null"], "enum": ["page", "element", "desktop", null]},
+        "orientation": {"type": ["string", "null"], "enum": ["horizontal", "vertical", null]},
         "title": {
           "type": ["string", "null"]
         },

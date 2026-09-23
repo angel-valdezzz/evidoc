@@ -10,8 +10,11 @@ from __future__ import annotations
 
 import logging
 from contextvars import ContextVar
+from pathlib import Path
 from time import perf_counter
 from typing import Any
+
+from robot.libraries.BuiltIn import BuiltIn
 
 from evidoc import api
 from evidoc.domain.enums import Status
@@ -23,7 +26,19 @@ ROBOT_LISTENER_API_VERSION = 3
 class Listener:
     """Listener API v3 implementation used by Robot Framework."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        root_dir: str | None = None,
+        storage: str = "file",
+        application: str | None = None,
+        requirement: str | None = None,
+    ) -> None:
+        if storage not in {"file", "base64"}:
+            raise ValueError("storage must be 'file' or 'base64'")
+        self.root_dir = root_dir
+        self.storage = storage
+        self.application = application
+        self.requirement = requirement
         self._test_started_at: ContextVar[float | None] = ContextVar(
             "EVIDOC_LISTENER_TEST_STARTED_AT",
             default=None,
@@ -31,6 +46,22 @@ class Listener:
 
     def start_test(self, data: Any, result: Any) -> None:
         try:
+            try:
+                output_dir = BuiltIn().get_variable_value("${OUTPUT DIR}", ".")
+            except Exception:  # RobotNotRunningError outside Robot execution
+                output_dir = None
+            if output_dir is not None or self.root_dir is not None:
+                metadata = (
+                    Path(self.root_dir)
+                    if self.root_dir
+                    else Path(output_dir) / "evidoc" / "metadata"
+                )
+                api.configure_context(
+                    root_dir=metadata,
+                    storage=self.storage,
+                    application=self.application,
+                    requirement=self.requirement,
+                )
             api.start_test(getattr(data, "name", "Unnamed test"))
             self._test_started_at.set(perf_counter())
         except Exception as exc:  # pragma: no cover

@@ -80,6 +80,13 @@ class Run:
                     "path": artifact.path,
                     "title": artifact.title,
                     "description": artifact.description,
+                    **({"data": artifact.data} if artifact.data is not None else {}),
+                    **({"capture": artifact.capture} if artifact.capture is not None else {}),
+                    **(
+                        {"orientation": artifact.orientation}
+                        if artifact.orientation is not None
+                        else {}
+                    ),
                 }
                 for artifact in self.artifacts
             ],

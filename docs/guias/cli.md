@@ -1,5 +1,7 @@
 # CLI
 
+El comando nuevo `evidoc build --input-dir output/evidoc/metadata --output-dir output/evidoc/reports --formats pdf,docx` genera ambos formatos mediante la misma API de `evidoc.build()`. `generate` continúa disponible. Consulta el [Quick Start](../primeros-pasos/evidencia-robot.md).
+
 ## Cuando usarla
 
 Usa la CLI cuando ya tienes resultados capturados y quieres generar reportes de forma reproducible.

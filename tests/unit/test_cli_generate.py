@@ -123,10 +123,12 @@ def persist_result(root_dir: Path, result: ResultModel) -> None:
     test_dir = root_dir / f"run-{result.run_id}" / f"test-{result.test_id}"
     for artifact in result.artifacts:
         if artifact.type == ArtifactType.IMAGE and "missing" not in artifact.id:
+            assert artifact.path is not None
             artifact_path = test_dir / Path(artifact.path)
             artifact_path.parent.mkdir(parents=True, exist_ok=True)
             PilImage.new("RGB", (32, 24), color=(25, 118, 210)).save(artifact_path, format="PNG")
         elif artifact.type != ArtifactType.IMAGE:
+            assert artifact.path is not None
             artifact_path = test_dir / Path(artifact.path)
             artifact_path.parent.mkdir(parents=True, exist_ok=True)
             artifact_path.write_text('{"ok": true}', encoding="utf-8")

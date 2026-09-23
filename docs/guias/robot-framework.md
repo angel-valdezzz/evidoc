@@ -1,5 +1,7 @@
 # Robot Framework
 
+Para la integración nueva de tres capturas, configuración del listener, almacenamiento y Pabot, consulta el [Quick Start](../primeros-pasos/evidencia-robot.md). Las keywords de esta página siguen disponibles por compatibilidad.
+
 ## Integraciones disponibles
 
 Evidoc expone dos puntos de integracion para Robot Framework:

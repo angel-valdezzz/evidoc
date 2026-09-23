@@ -18,10 +18,12 @@ reportlab = "^4.2.0"
 python-docx = "^1.1.2"
 jsonschema = "^4.23.0"
 robotframework = "^7.0.0"
+mss = "^10.0.0"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.3.0"
 pytest-cov = "^6.1.1"
+pypdf = "^6.0.0"
 
 [tool.poetry.group.acceptance.dependencies]
 pytest-bdd = "^8.1.0"

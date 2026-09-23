@@ -1,18 +1,20 @@
+"""Business evidence PDF built from the renderer-neutral result model."""
+
 from __future__ import annotations
 
-import re
+from html import escape
+from io import BytesIO
 from pathlib import Path
-from typing import cast
+from typing import Any
 
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.lib.units import inch
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import cm
 from reportlab.lib.utils import ImageReader
 from reportlab.platypus import (
-    HRFlowable,
     Image,
+    KeepTogether,
     PageBreak,
     Paragraph,
     SimpleDocTemplate,
@@ -22,268 +24,142 @@ from reportlab.platypus import (
 )
 
 from evidoc.application.report_renderer import ReportRenderer
-from evidoc.domain.artifact import Artifact
 from evidoc.domain.artifact_type import ArtifactType
 from evidoc.domain.run import Run
-from evidoc.domain.status import Status
-from evidoc.infrastructure.reporting.helpers import status_color
+from evidoc.infrastructure.reporting.helpers import (
+    image_bytes,
+    safe_name,
+    status_color,
+    summary_rows,
+)
+
+NAVY = colors.HexColor("#2c3e50")
+PALE = colors.HexColor("#f8f9fa")
+BORDER = colors.HexColor("#dee2e6")
 
 
 class PdfReportRenderer(ReportRenderer):
     format_name = "pdf"
 
     def render_single(self, source_dir: Path, output_dir: Path, result: Run) -> Path:
-        output = output_dir / f"{self._safe_name(result.test_case.name)}-{result.test_id}.pdf"
+        output = output_dir / f"{safe_name(result.test_case.name)}-{result.test_id}.pdf"
         self._build(output, source_dir, [result])
         return output
 
     def render_run(self, source_dir: Path, output_dir: Path, results: list[Run]) -> Path:
         run_ids = {result.run_id for result in results}
-        run_id = results[0].run_id if len(run_ids) == 1 and results else "combined"
+        run_id = results[0].run_id if len(run_ids) == 1 else "combined"
         output = output_dir / f"run-{run_id}.pdf"
         self._build(output, source_dir, results)
         return output
 
-    def _build(self, output_path: Path, source_dir: Path, results: list[Run]) -> None:
-        styles = self._styles()
-        doc = SimpleDocTemplate(
-            str(output_path),
-            pagesize=A4,
-            title="Evidoc Report",
-            leftMargin=0.65 * inch,
-            rightMargin=0.65 * inch,
-            topMargin=0.7 * inch,
-            bottomMargin=0.65 * inch,
-        )
-        story = [Paragraph("Evidoc Report", styles["Title"]), Spacer(1, 0.14 * inch)]
-        for index, result in enumerate(results):
-            story.extend(self._test_section(result, styles, source_dir))
-            if index < len(results) - 1:
-                story.append(PageBreak())
-        doc.build(story)
-
-    def _styles(self) -> dict[str, ParagraphStyle]:
+    def _build(self, output: Path, source_dir: Path, results: list[Run]) -> None:
         styles = getSampleStyleSheet()
-        styles["Title"].fontSize = 22
-        styles["Title"].leading = 28
-        styles["Heading1"].fontSize = 16
-        styles["Heading1"].leading = 20
-        styles["Heading2"].fontSize = 11
-        styles["Heading2"].leading = 14
-        styles["BodyText"].fontSize = 9
-        styles["BodyText"].leading = 12
-        styles.add(
-            ParagraphStyle(
-                name="Meta",
-                parent=styles["BodyText"],
-                textColor=colors.HexColor("#344054"),
-                spaceAfter=2,
-            )
-        )
-        styles.add(
-            ParagraphStyle(
-                name="Muted",
-                parent=styles["BodyText"],
-                textColor=colors.HexColor("#667085"),
-                spaceAfter=6,
-            )
-        )
-        styles.add(
-            ParagraphStyle(
-                name="StatusBadge",
-                parent=styles["BodyText"],
-                fontSize=8,
-                leading=10,
-                alignment=TA_CENTER,
-                textColor=colors.white,
-            )
-        )
-        return cast(dict[str, ParagraphStyle], styles)
-
-    def _test_section(
-        self, result: Run, styles: dict[str, ParagraphStyle], source_dir: Path
-    ) -> list:
-        items: list = [
-            Paragraph(result.test_case.name, styles["Heading1"]),
-            Spacer(1, 0.04 * inch),
-            self._status_badge(result.test_case.status.value, styles),
-            Spacer(1, 0.10 * inch),
-        ]
-
-        for label, value in self._metadata_rows(result):
-            items.append(Paragraph(f"<b>{label}:</b> {value}", styles["Meta"]))
-
-        items.extend([Spacer(1, 0.08 * inch), self._separator(), Spacer(1, 0.08 * inch)])
-        items.append(Paragraph("Steps", styles["Heading2"]))
-        items.append(Spacer(1, 0.04 * inch))
-
-        artifact_map = {artifact.id: artifact for artifact in result.artifacts}
-        image_refs: list[tuple[str, Artifact]] = []
-
-        for step_index, step in enumerate(result.steps, start=1):
-            items.extend(self._step_block(step_index, step.title, step.status.value, styles))
-
-            if step.logs:
-                for log in step.logs:
-                    items.append(
-                        Paragraph(
-                            f"[{log.level.value}] {self._escape(log.message)}",
-                            styles["BodyText"],
-                        )
-                    )
-            else:
-                items.append(Paragraph("No logs recorded.", styles["Muted"]))
-
-            attachments = [
-                artifact_map[artifact_id]
-                for artifact_id in step.artifact_ids
-                if artifact_id in artifact_map
+        styles["Title"].textColor = NAVY
+        styles["Title"].fontSize = 19
+        styles["Heading2"].textColor = NAVY
+        styles["BodyText"].leading = 13
+        story: list = []
+        for index, result in enumerate(results):
+            if index:
+                story.append(PageBreak())
+            story += [
+                Paragraph("Reporte de Ejecución Automatizada", styles["Title"]),
+                Spacer(1, 0.4 * cm),
+                Paragraph("Resumen De Ejecución", styles["Heading2"]),
+                Spacer(1, 0.15 * cm),
             ]
-            file_refs = [
-                artifact for artifact in attachments if artifact.type != ArtifactType.IMAGE
-            ]
-            for artifact in file_refs:
-                label = artifact.title or artifact.path
-                items.append(Paragraph(f"Attachment: {self._escape(label)}", styles["Muted"]))
-
-            for artifact in attachments:
-                if artifact.type == ArtifactType.IMAGE:
-                    image_refs.append((step.title, artifact))
-
-            if step_index < len(result.steps):
-                items.extend(
-                    [Spacer(1, 0.06 * inch), self._separator(light=True), Spacer(1, 0.06 * inch)]
+            rows = [[label, value] for label, value in summary_rows(result)]
+            table = Table(rows, colWidths=[3.5 * cm, 13.5 * cm], hAlign="LEFT")
+            table.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (0, -1), NAVY),
+                        ("TEXTCOLOR", (0, 0), (0, -1), colors.white),
+                        ("ROWBACKGROUNDS", (1, 0), (1, -1), [colors.white, PALE]),
+                        ("GRID", (0, 0), (-1, -1), 0.4, BORDER),
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("TOPPADDING", (0, 0), (-1, -1), 7),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+                    ]
                 )
-
-        if image_refs:
-            items.append(PageBreak())
-            items.append(Paragraph("Image Evidence", styles["Heading2"]))
-            items.append(Spacer(1, 0.06 * inch))
-            for index, (step_title, artifact) in enumerate(image_refs):
-                if index and index % 2 == 0:
-                    items.append(PageBreak())
-                items.extend(self._image_block(result, step_title, artifact, source_dir, styles))
-
-        return items
-
-    def _metadata_rows(self, result: Run) -> list[tuple[str, str]]:
-        rows = [
-            ("Test ID", result.test_id),
-            ("Run ID", result.run_id),
-            ("Generated", result.generated_at),
-            ("Duration", f"{result.test_case.duration:.2f}s"),
-        ]
-        if result.test_case.application:
-            rows.append(("Application", result.test_case.application))
-        if result.test_case.requirement:
-            rows.append(("Requirement", result.test_case.requirement))
-        return rows
-
-    def _step_block(
-        self, step_number: int, title: str, status: str, styles: dict[str, ParagraphStyle]
-    ) -> list:
-        table = Table(
-            [
-                [
-                    Paragraph(f"<b>{step_number}. {self._escape(title)}</b>", styles["BodyText"]),
-                    self._status_badge(status, styles),
-                ]
-            ],
-            colWidths=[5.55 * inch, 0.95 * inch],
-        )
-        table.setStyle(
-            TableStyle(
-                [
-                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                    ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#d0d5dd")),
-                    ("BACKGROUND", (0, 0), (0, 0), colors.HexColor("#f8fafc")),
-                    ("LEFTPADDING", (0, 0), (-1, -1), 8),
-                    ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-                    ("TOPPADDING", (0, 0), (-1, -1), 6),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-                ]
             )
+            story += [table, Spacer(1, 0.6 * cm)]
+            artifacts = {artifact.id: artifact for artifact in result.artifacts}
+            image_count = 0
+            for step in result.steps:
+                starts_new_page = (
+                    image_count > 0
+                    and image_count % 2 == 0
+                    and any(
+                        artifacts[identifier].type == ArtifactType.IMAGE
+                        for identifier in step.artifact_ids
+                    )
+                )
+                if starts_new_page:
+                    story.append(PageBreak())
+                story.append(Paragraph(escape(step.title), styles["Heading2"]))
+                story.append(
+                    Paragraph(
+                        f'<font color="{status_color(step.status)}">{step.status.value}</font>',
+                        styles["BodyText"],
+                    )
+                )
+                for log in step.logs:
+                    story.append(Paragraph(escape(log.message), styles["BodyText"]))
+                for identifier in step.artifact_ids:
+                    artifact = artifacts[identifier]
+                    if artifact.type != ArtifactType.IMAGE:
+                        story.append(
+                            Paragraph(
+                                "Adjunto: " + escape(artifact.title or artifact.path or identifier),
+                                styles["BodyText"],
+                            )
+                        )
+                        continue
+                    if image_count and image_count % 2 == 0 and not starts_new_page:
+                        story.append(PageBreak())
+                    image_count += 1
+                    starts_new_page = False
+                    block: list = [
+                        Paragraph(escape(artifact.title or "Evidencia"), styles["BodyText"])
+                    ]
+                    if artifact.description:
+                        block.append(Paragraph(escape(artifact.description), styles["BodyText"]))
+                    data = image_bytes(source_dir, result, artifact)
+                    if data:
+                        reader = ImageReader(BytesIO(data))
+                        width, height = reader.getSize()
+                        max_height = 16 * cm if artifact.orientation == "vertical" else 12 * cm
+                        ratio = min(17 * cm / width, max_height / height, 1)
+                        block.append(
+                            Image(BytesIO(data), width=width * ratio, height=height * ratio)
+                        )
+                    else:
+                        block.append(Paragraph("Imagen no disponible", styles["BodyText"]))
+                    block.append(Spacer(1, 0.35 * cm))
+                    story.append(KeepTogether(block))
+                story.append(Spacer(1, 0.25 * cm))
+        doc = SimpleDocTemplate(
+            str(output),
+            pagesize=A4,
+            leftMargin=2 * cm,
+            rightMargin=2 * cm,
+            topMargin=2 * cm,
+            bottomMargin=2 * cm,
+            title="Reporte de Ejecución Automatizada",
         )
-        return [table, Spacer(1, 0.05 * inch)]
+        doc.build(story, onFirstPage=self._header, onLaterPages=self._header)
 
-    def _image_block(
-        self,
-        result: Run,
-        step_title: str,
-        artifact: Artifact,
-        source_dir: Path,
-        styles: dict[str, ParagraphStyle],
-    ) -> list:
-        image_path = (
-            source_dir / f"run-{result.run_id}" / f"test-{result.test_id}" / Path(artifact.path)
-        )
-        block = [
-            Paragraph(f"<b>Step:</b> {self._escape(step_title)}", styles["BodyText"]),
-            Paragraph(self._escape(artifact.title or "Screenshot"), styles["BodyText"]),
-        ]
-        if artifact.description:
-            block.append(Paragraph(self._escape(artifact.description), styles["Muted"]))
-        else:
-            block.append(Spacer(1, 0.03 * inch))
-
-        if not image_path.exists():
-            block.extend(
-                [
-                    Paragraph(f"Missing image: {self._escape(artifact.path)}", styles["Muted"]),
-                    Spacer(1, 0.12 * inch),
-                ]
-            )
-            return block
-
-        width, height = self._scaled_image_size(
-            image_path, max_width=6.2 * inch, max_height=3.2 * inch
-        )
-        block.extend(
-            [
-                Image(str(image_path), width=width, height=height),
-                Spacer(1, 0.12 * inch),
-            ]
-        )
-        return block
-
-    def _scaled_image_size(
-        self, image_path: Path, *, max_width: float, max_height: float
-    ) -> tuple[float, float]:
-        raw_width, raw_height = ImageReader(str(image_path)).getSize()
-        if not raw_width or not raw_height:
-            return max_width, max_height
-        scale = min(max_width / raw_width, max_height / raw_height, 1.0)
-        return raw_width * scale, raw_height * scale
-
-    def _separator(self, *, light: bool = False) -> HRFlowable:
-        return HRFlowable(
-            width="100%",
-            thickness=0.6 if light else 0.8,
-            color=colors.HexColor("#d0d5dd" if light else "#98a2b3"),
-            spaceBefore=0,
-            spaceAfter=0,
-        )
-
-    def _status_badge(self, status: str, styles: dict[str, ParagraphStyle]) -> Table:
-        normalized = Status(status)
-        table = Table([[Paragraph(status, styles["StatusBadge"])]], colWidths=[0.88 * inch])
-        table.setStyle(
-            TableStyle(
-                [
-                    ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(status_color(normalized))),
-                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                    ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-                    ("TOPPADDING", (0, 0), (-1, -1), 4),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-                ]
-            )
-        )
-        return table
-
-    def _safe_name(self, value: str) -> str:
-        return re.sub(r"[^A-Za-z0-9._-]+", "_", value).strip("._") or "test"
-
-    def _escape(self, value: str) -> str:
-        return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    @staticmethod
+    def _header(canvas: Any, doc: Any) -> None:
+        canvas.saveState()
+        canvas.setFillColor(NAVY)
+        canvas.rect(0, A4[1] - 1 * cm, A4[0], 1 * cm, fill=1, stroke=0)
+        canvas.setFillColor(colors.white)
+        canvas.setFont("Helvetica-Bold", 10)
+        canvas.drawString(2 * cm, A4[1] - 0.65 * cm, "EviDoc")
+        canvas.setFillColor(NAVY)
+        canvas.setFont("Helvetica", 8)
+        canvas.drawRightString(A4[0] - 2 * cm, 0.9 * cm, f"{doc.page}")
+        canvas.restoreState()

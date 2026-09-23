@@ -100,6 +100,7 @@ nav:
       - primeros-pasos/index.md
       - Instalacion: primeros-pasos/instalacion.md
       - Recorrido Guiado: primeros-pasos/recorrido-guiado.md
+      - Evidencia Robot: primeros-pasos/evidencia-robot.md
       - Configuracion Basica: primeros-pasos/configuracion-basica.md
   - Guias Tecnicas:
       - guias/index.md

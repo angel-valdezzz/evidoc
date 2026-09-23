@@ -1,5 +1,7 @@
 # Python API
 
+Para ejecutar `robot.run(...)` y luego `evidoc.build(...)` en el mismo proceso, consulta el [Quick Start](../primeros-pasos/evidencia-robot.md). `build(input_dir, output_dir, formats=["pdf", "docx"])` retorna las rutas generadas.
+
 ## Cuando usarla
 
 La API es la opcion correcta si quieres integrar Evidoc dentro de una automatizacion Python o dentro de una herramienta interna.

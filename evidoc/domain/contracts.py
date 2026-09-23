@@ -100,6 +100,9 @@ def run_from_dict(payload: dict[str, Any]) -> Run:
                 path=artifact["path"],
                 title=artifact.get("title"),
                 description=artifact.get("description"),
+                data=artifact.get("data"),
+                capture=artifact.get("capture"),
+                orientation=artifact.get("orientation"),
             )
             for artifact in payload.get("artifacts", [])
         ),
