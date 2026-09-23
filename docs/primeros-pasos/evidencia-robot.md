@@ -2,6 +2,16 @@
 
 Instala EviDoc en el mismo entorno de Python donde ejecutas Robot. Para capturas del navegador instala también SeleniumLibrary; para escritorio debe haber una sesión gráfica activa. El listener y las keywords son independientes: carga ambos.
 
+Si tu proyecto de pruebas usa Poetry, ejecuta desde **ese proyecto** (no desde el repositorio de EviDoc):
+
+```bash
+poetry add "git+https://github.com/angel-valdezzz/evidoc.git#feature/legacy-evidence-reporting"
+poetry add robotframework-seleniumlibrary
+poetry run python -c "import evidoc.robot, evidoc.listener; print(evidoc.robot.__file__)"
+```
+
+Si ya clonaste la rama junto al proyecto de pruebas, puedes usar `poetry add --editable ../evidoc` en vez de la dependencia Git. La ruta que imprime el diagnóstico debe apuntar a la versión recién instalada; `evidoc.toml` configura la ejecución, pero no instala la biblioteca. Usa siempre `poetry run robot` y `poetry run evidoc` para que ambos comandos compartan el entorno. En VS Code, selecciona también el intérprete de ese entorno; consúltalo con `poetry env info --path`.
+
 ```robotframework
 *** Settings ***
 Library    SeleniumLibrary
@@ -21,11 +31,49 @@ Sustituye la URL y el locator del ejemplo por los de tu aplicación. Las captura
 
 El resumen del informe conserva la tabla azul del reporte anterior: Aplicación, Requerimiento, Caso de Prueba, Estatus, Duración y la nueva fila roja **Defecto**. `Set Defect` la rellena para el caso actual; de lo contrario queda vacía. Marca, proyecto, fecha y ambiente aparecen en el encabezado o pie del reporte.
 
+## Keywords en un archivo `.resource`
+
+El archivo `resources/evidencia.resource` puede importar las bibliotecas y ofrecer keywords propias de tu proyecto:
+
+```robotframework
+*** Settings ***
+Library    SeleniumLibrary
+Library    evidoc.robot
+
+*** Keywords ***
+Registrar página
+    [Arguments]    ${titulo}
+    Capture Page Evidence    ${titulo}    INFO
+
+Registrar panel titular
+    Capture Element Evidence    //div[@id="PanelTitular"]    Panel Titular    INFO    orientation=horizontal    include_page=True
+
+Registrar escritorio
+    Capture Desktop Evidence    Evidencia completa    INFO
+```
+
+En `tests/titular.robot` importa ese recurso y utiliza sus keywords:
+
+```robotframework
+*** Settings ***
+Resource    ../resources/evidencia.resource
+
+*** Test Cases ***
+Validar titular
+    Open Browser    https://example.org    chrome
+    Registrar página    Vista general del titular
+    Registrar panel titular
+    Registrar escritorio
+    Close Browser
+```
+
+`Library    evidoc.robot` importa las keywords. `--listener evidoc.listener` abre y guarda el resultado por cada caso; pásalo al ejecutar Robot, no lo declares como `Library` en el `.resource`. Abre el navegador antes de capturar página o elemento. `Capture Desktop Evidence` se puede usar en este mismo recurso aunque no haya navegador.
+
 ## Listener y directorios
 
 ```bash
-robot --outputdir output --listener evidoc.listener tests/
-evidoc build --input-dir output/evidoc/metadata --output-dir output/evidoc/reports --formats pdf,docx
+poetry run robot --outputdir output --listener evidoc.listener tests/
+poetry run evidoc build --input-dir output/evidoc/metadata --output-dir output/evidoc/reports --formats pdf,docx
 ```
 
 El listener toma `${OUTPUT DIR}` de Robot. Por defecto escribe `output/evidoc/metadata/run-<id>/test-<id>/result.json`; con almacenamiento `file`, la misma carpeta contiene `artifacts/*.png`. Los informes se generan en `output/evidoc/reports` al ejecutar `build`. Robot continúa escribiendo `output.xml`, `log.html` y `report.html` directamente en `output`.
@@ -79,6 +127,8 @@ mode = "single"
 ```
 
 En este caso bastan `robot --outputdir output --listener evidoc.listener tests/` y `evidoc build`. Un argumento explícito de listener, CLI o `build()` prevalece sobre el TOML. También acepta `aplicacion`, `proyecto` y `ambiente` como aliases de las claves en inglés; no declares las dos versiones de una clave. `source_dir` y `format` antiguos siguen siendo válidos para `evidoc generate`. `metadata_dir` indica la ruta compartida para el listener y `build`, incluso con Pabot. Puedes pasar `config_path="ruta/evidoc.toml"` a `build()` o `--config ruta/evidoc.toml` al CLI.
+
+El archivo se llama `evidoc.toml` y se busca en el directorio desde el que lanzas los comandos. También se admite `evidoc.json` con las mismas claves, por ejemplo `{"metadata_dir":"output/evidoc/metadata","output_dir":"output/evidoc/reports","formats":["pdf","docx"],"storage":"file"}`. Si existen los dos, se elige TOML. `pyproject.toml` gestiona la instalación de Poetry; `evidoc.toml` o `evidoc.json` configura EviDoc. El JSON de ejemplo del propio repositorio conserva claves del CLI antiguo (`source_dir` y `format`): para este flujo utiliza `metadata_dir` y `formats`.
 
 ## Almacenamiento y metadatos
 

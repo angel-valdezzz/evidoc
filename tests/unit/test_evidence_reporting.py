@@ -133,6 +133,34 @@ Capture all
     assert results[0].steps[1].title == "Contexto: Panel Titular"
 
 
+def test_resource_imports_evidoc_keywords_with_listener(tmp_path: Path) -> None:
+    resource = tmp_path / "evidencia.resource"
+    resource.write_text(
+        "*** Settings ***\nLibrary    evidoc.robot\n*** Keywords ***\n"
+        "Registrar evidencia\n    Log Step    Inicio del flujo    INFO\n"
+        "    Log Info    Dato de negocio\n",
+        encoding="utf-8",
+    )
+    suite = tmp_path / "caso.robot"
+    suite.write_text(
+        "*** Settings ***\nResource    evidencia.resource\n*** Test Cases ***\n"
+        "Caso con resource\n    Registrar evidencia\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "output"
+    assert (
+        run(
+            str(suite), listener="evidoc.listener", outputdir=str(output), log="NONE", report="NONE"
+        )
+        == 0
+    )
+    results = FilesystemResultRepository(
+        project_root() / "schemas" / "result.schema.json"
+    ).load_test_results(output / "evidoc" / "metadata")
+    assert len(results) == 1
+    assert results[0].steps[0].title == "Inicio del flujo"
+
+
 def test_small_element_uses_available_report_space() -> None:
     assert fitted_size(80, 50, 480, 340) == (480, 300)
     assert fitted_size(800, 50, 480, 340) == (480, 30)

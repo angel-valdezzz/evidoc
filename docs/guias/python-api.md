@@ -38,10 +38,12 @@ api.end_test("PASS", 2.84)
 from pathlib import Path
 from evidoc import api
 
+
 class DemoDriver:
     def screenshot(self, path: str) -> bool:
         Path(path).write_bytes(b"png")
         return True
+
 
 api.configure_context(root_dir="./results")
 api.start_test("Login valid user")
