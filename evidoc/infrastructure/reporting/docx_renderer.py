@@ -12,6 +12,7 @@ from docx.oxml.ns import qn
 from docx.shared import Inches, RGBColor
 from reportlab.lib.utils import ImageReader
 
+from evidoc.application.report_filename import safe_name
 from evidoc.application.report_renderer import ReportRenderer
 from evidoc.domain.artifact_type import ArtifactType
 from evidoc.domain.run import Run
@@ -19,7 +20,7 @@ from evidoc.infrastructure.reporting.helpers import (
     fitted_size,
     image_bytes,
     report_date,
-    safe_name,
+    status_color,
     summary_rows,
 )
 
@@ -28,7 +29,7 @@ class DocxReportRenderer(ReportRenderer):
     format_name = "docx"
 
     def render_single(self, source_dir: Path, output_dir: Path, result: Run) -> Path:
-        output = output_dir / f"{safe_name(result.test_case.name)}-{result.test_id}.docx"
+        output = output_dir / f"{safe_name(result.test_case.name)}.docx"
         self._build(output, source_dir, [result])
         return output
 
@@ -80,9 +81,13 @@ class DocxReportRenderer(ReportRenderer):
                 document.add_page_break()
             artifacts = {artifact.id: artifact for artifact in result.artifacts}
             for step in result.steps:
-                heading = document.add_heading(f"◆ {step.title} ◆", 2)
+                heading = document.add_heading(level=2)
                 heading.paragraph_format.keep_with_next = True
-                document.add_paragraph(step.status.value)
+                marker = heading.add_run("◆ ")
+                marker.font.color.rgb = RGBColor.from_string(status_color(step.status)[1:])
+                heading.add_run(step.title)
+                marker = heading.add_run(" ◆")
+                marker.font.color.rgb = RGBColor.from_string(status_color(step.status)[1:])
                 for log in step.logs:
                     document.add_paragraph(log.message)
                 for identifier in step.artifact_ids:

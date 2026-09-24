@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import base64
-import re
 from datetime import datetime
 from pathlib import Path
 
@@ -51,10 +50,6 @@ def image_bytes(source_dir: Path, result: Run, artifact: Artifact) -> bytes | No
     if not image.is_relative_to(test_dir):
         raise ValueError("Artifact path escapes the test directory")
     return image.read_bytes() if image.is_file() else None
-
-
-def safe_name(name: str) -> str:
-    return re.sub(r"[^A-Za-z0-9._-]+", "_", name).strip("._") or "test"
 
 
 def fitted_size(

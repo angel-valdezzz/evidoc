@@ -23,6 +23,7 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+from evidoc.application.report_filename import safe_name
 from evidoc.application.report_renderer import ReportRenderer
 from evidoc.domain.artifact_type import ArtifactType
 from evidoc.domain.run import Run
@@ -30,7 +31,6 @@ from evidoc.infrastructure.reporting.helpers import (
     fitted_size,
     image_bytes,
     report_date,
-    safe_name,
     status_color,
     summary_rows,
 )
@@ -46,7 +46,7 @@ class PdfReportRenderer(ReportRenderer):
     format_name = "pdf"
 
     def render_single(self, source_dir: Path, output_dir: Path, result: Run) -> Path:
-        output = output_dir / f"{safe_name(result.test_case.name)}-{result.test_id}.pdf"
+        output = output_dir / f"{safe_name(result.test_case.name)}.pdf"
         self._build(output, source_dir, [result])
         return output
 
@@ -101,6 +101,7 @@ class PdfReportRenderer(ReportRenderer):
             artifacts = {artifact.id: artifact for artifact in result.artifacts}
             image_count = 0
             for step in result.steps:
+                color = status_color(step.status)
                 starts_new_page = (
                     image_count > 0
                     and image_count % 2 == 0
@@ -113,15 +114,9 @@ class PdfReportRenderer(ReportRenderer):
                     story.append(PageBreak())
                 story.append(
                     Paragraph(
-                        f'<font color="#2f50c5">&#9830;</font> {escape(step.title)} '
-                        '<font color="#2f50c5">&#9830;</font>',
+                        f'<font color="{color}">&#9830;</font> {escape(step.title)} '
+                        f'<font color="{color}">&#9830;</font>',
                         styles["Heading2"],
-                    )
-                )
-                story.append(
-                    Paragraph(
-                        f'<font color="{status_color(step.status)}">{step.status.value}</font>',
-                        styles["BodyText"],
                     )
                 )
                 for log in step.logs:

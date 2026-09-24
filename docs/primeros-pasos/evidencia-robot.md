@@ -110,7 +110,7 @@ reports = build(
 print(code, reports)
 ```
 
-`build()` retorna una lista de `Path`. El modo por defecto genera un documento por caso y formato seleccionado; `mode="run"` genera uno combinado por formato. Sin lista explícita y sin configuración, el formato predeterminado es PDF. `evidoc generate` permanece disponible para los flujos anteriores.
+`build()` retorna una lista de `Path`. Sin `mode` en la configuración, genera un documento por caso y formato seleccionado; el nombre del archivo es el nombre seguro del caso (por ejemplo, `CPA-D-SAAS-283-TC036.pdf`), sin ID adicional. `mode="run"` genera uno combinado por formato. Si dos casos producen el mismo nombre de archivo en un directorio de metadata, `build` se detiene para evitar sobrescribir un reporte; separa las ejecuciones en directorios distintos. Sin lista explícita de formatos ni configuración, el formato predeterminado es PDF. `evidoc generate` permanece disponible para los flujos anteriores.
 
 ## `evidoc.toml`
 
@@ -137,3 +137,5 @@ El archivo se llama `evidoc.toml` y se busca en el directorio desde el que lanza
 `file` guarda PNG independientes y su ruta relativa en `result.json`. `base64` incrusta los bytes de cada PNG en `data` y evita crear PNG separados. Los adjuntos no fotográficos siguen siendo archivos. Ambos formatos de reporte usan el mismo modelo de resultado y aceptan ambas estrategias. PDF es el documento de entrega; DOCX conserva tablas, textos e imágenes editables en Word.
 
 Los artefactos de imagen registran `capture` (`page`, `element` o `desktop`) y `orientation`. Los pasos y sus referencias a artefactos conservan el orden en que se invocaron las keywords. Las APIs anteriores `Capture Screenshot`, `Log Step`, `Log Info`, `Attach Artifact` y `evidoc generate` siguen disponibles.
+
+En PDF y DOCX, el color de los diamantes junto al título indica el estado del paso (`INFO`, `WARN`, `FAIL`, etc.); el estado no se repite debajo del título. Las dimensiones y la paginación de las capturas permanecen iguales.

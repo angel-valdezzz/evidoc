@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 from docx import Document
+from docx.shared import RGBColor
 from evidoc import build
 from evidoc.api import EvidocAPI
 from evidoc.infrastructure.filesystem.filesystem_result_repository import FilesystemResultRepository
@@ -45,13 +46,20 @@ def test_storage_and_both_renderers(tmp_path: Path, storage: str) -> None:
     result = results[0]
     assert all(bool(a.data) == (storage == "base64") for a in result.artifacts)
     assert len(list(source.rglob("*.png"))) == (0 if storage == "base64" else 3)
-    outputs = build(source, tmp_path / "reports", ["pdf", "docx"])
+    outputs = build(source, tmp_path / "reports", ["pdf", "docx"], mode="single")
+    assert {output.name for output in outputs} == {"Inicio_de_sesi_n.pdf", "Inicio_de_sesi_n.docx"}
     assert {output.suffix for output in outputs} == {".pdf", ".docx"}
     assert all(output.stat().st_size > 1000 for output in outputs)
     document = Document(str(next(p for p in outputs if p.suffix == ".docx")))
     assert "Reporte de Ejecución Automatizada" in [p.text for p in document.paragraphs]
     assert "Portal" in [cell.text for row in document.tables[0].rows for cell in row.cells]
     assert len(document.inline_shapes) == 3
+    assert "INFO" not in [paragraph.text for paragraph in document.paragraphs]
+    assert [paragraph.text for paragraph in document.paragraphs if "◆" in paragraph.text] == [
+        "◆ page ◆",
+        "◆ element ◆",
+        "◆ desktop ◆",
+    ]
     assert [row.cells[0].text for row in document.tables[0].rows][-1] == "Defecto"
     assert document.tables[0].rows[-1].cells[1].text == ""
     assert 'w:fill="C62828"' in document.tables[0].rows[-1].cells[0]._tc.xml
@@ -62,7 +70,48 @@ def test_storage_and_both_renderers(tmp_path: Path, storage: str) -> None:
         for page in PdfReader(next(p for p in outputs if p.suffix == ".pdf")).pages
     )
     assert "Resumen De Ejecución" in pdf_text
+    assert "INFO" not in pdf_text
     assert pdf_text.index("page") < pdf_text.index("element") < pdf_text.index("desktop")
+
+
+def test_report_markers_follow_step_status(tmp_path: Path) -> None:
+    source = tmp_path / "metadata"
+    api = EvidocAPI(root_dir=source)
+    api.start_test("Status colors")
+    api.log_step("Needs attention", "WARN")
+    api.end_test("PASS", 0.2)
+    outputs = build(source, tmp_path / "reports", ["pdf", "docx"])
+    document = Document(str(next(path for path in outputs if path.suffix == ".docx")))
+    heading = next(
+        paragraph for paragraph in document.paragraphs if "Needs attention" in paragraph.text
+    )
+    assert heading.text == "◆ Needs attention ◆"
+    assert [run.font.color.rgb for run in (heading.runs[0], heading.runs[-1])] == [
+        RGBColor(237, 108, 2),
+        RGBColor(237, 108, 2),
+    ]
+    from pypdf import PdfReader
+
+    pdf = PdfReader(next(path for path in outputs if path.suffix == ".pdf"))
+    pdf_text = "\n".join(page.extract_text() for page in pdf.pages)
+    assert "Needs attention" in pdf_text
+    assert "WARN" not in pdf_text
+    contents = [page.get_contents() for page in pdf.pages]
+    assert all(content is not None for content in contents)
+    assert b".929412 .423529 .007843 rg" in b"\n".join(
+        content.get_data() for content in contents if content is not None
+    )
+
+
+def test_same_case_name_cannot_overwrite_a_report(tmp_path: Path) -> None:
+    source = tmp_path / "metadata"
+    api = EvidocAPI(root_dir=source)
+    for _ in range(2):
+        api.start_test("Same case")
+        api.end_test("PASS", 0.1)
+    with pytest.raises(ValueError, match="Case names must be unique"):
+        build(source, tmp_path / "reports", ["pdf"], mode="single")
+    assert not (tmp_path / "reports").exists()
 
 
 def test_cli_and_python_build_match(tmp_path: Path) -> None:

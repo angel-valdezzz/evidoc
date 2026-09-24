@@ -19,7 +19,7 @@ Segun configuracion, obtendras:
 
 === "`mode=single`"
 
-    Genera un reporte por `test_id`.
+    Genera un reporte por caso. El archivo toma el nombre seguro del caso, sin `test_id`.
 
 ## Ejemplo de salida consolidada
 
@@ -37,9 +37,11 @@ reports/
 
 ```text
 reports/
-├── User_can_sign_in-login_valid_user.docx
-└── Checkout_happy_path-checkout_001.docx
+├── User_can_sign_in.docx
+└── Checkout_happy_path.docx
 ```
+
+Si dos casos tienen el mismo nombre seguro dentro de la misma carpeta de metadata, la generacion se detiene para evitar que uno sobrescriba al otro. Guarda ejecuciones distintas en carpetas separadas.
 
 ## Que hace un reporte util
 
