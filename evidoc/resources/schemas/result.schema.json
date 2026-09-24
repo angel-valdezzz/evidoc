@@ -85,6 +85,7 @@
           "type": "string",
           "minLength": 1
         },
+        "full_name": {"type": "string", "minLength": 1},
         "status": {
           "$ref": "#/$defs/status"
         },
@@ -166,7 +167,8 @@
         },
         "description": {
           "type": ["string", "null"]
-        }
+        },
+        "external": {"type": "boolean"}
       }
     }
   }

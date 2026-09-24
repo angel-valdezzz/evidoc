@@ -1,59 +1,40 @@
 # Recorrido guiado
 
-## Objetivo
+## Una sola ejecución
 
-Generar un reporte a partir de una corrida ya estructurada.
+Configura `evidoc.toml` en el directorio donde ejecutarás los comandos:
 
-## Paso 1. Revisar la configuracion base
-
-El proyecto incluye un ejemplo funcional en el archivo `evidoc.json` de la raiz.
-
-```json
-{
-  "source_dir": "./results",
-  "output_dir": "./reports",
-  "format": "pdf",
-  "mode": "run",
-  "application": "Example Application",
-  "requirement": "REQ-001"
-}
+```toml
+metadata_dir = "output/run/robot/evidoc/metadata"
+output_dir = "output/run/robot/evidoc/reports"
+formats = ["pdf", "docx"]
+mode = "single"
 ```
 
-## Paso 2. Generar por CLI
+Ejecuta Robot con el listener e importa la librería de keywords en tu suite:
 
 ```bash
-poetry run evidoc generate --source_dir .\results --output_dir .\reports --mode run --format pdf
+poetry run robot --outputdir output/run/robot --listener evidoc.listener tests/
+poetry run evidoc build
 ```
 
-## Paso 3. Abrir la TUI
+Cada caso genera un PDF y un DOCX con su nombre. `upload-manifest.json` agrupa sus rutas por caso. Si registraste descargas con `Attach File`, también aparecen en `files`.
+
+## Run y rerun
+
+Guarda cada ejecución en carpetas separadas y luego une sus resultados:
 
 ```bash
-poetry run evidoc tui
+poetry run evidoc merge \
+  --input-dir output/run/robot/evidoc/metadata \
+  --input-dir output/rerun/robot/evidoc/metadata \
+  --output-dir output/final/metadata
+poetry run evidoc build \
+  --input-dir output/final/metadata \
+  --output-dir output/final/reports \
+  --exclude-status FAIL,SKIP
 ```
 
-La TUI permite seleccionar:
+El resultado del rerun reemplaza al del run para cada prueba repetida. Los casos sin rerun conservan su resultado original. El filtro solo afecta los reportes y el manifiesto; el índice fusionado conserva todos los resultados. No necesitas ejecutar `merge` si hiciste una sola corrida.
 
-- carpeta de resultados,
-- carpeta de salida,
-- formato `pdf` o `docx`,
-- modo `run` o `single`.
-
-## Paso 4. Entender la salida
-
-Si `mode=run`, obtendras algo como:
-
-```text
-reports/
-\-- run-run_cli.pdf
-```
-
-Si `mode=single`, obtendras un archivo por prueba. El patron de nombre depende del `test_case.name` y del `test_id`.
-
-```text
-reports/
-|-- User_can_sign_in-login_valid_user.pdf
-\-- Checkout_happy_path-checkout_001.pdf
-```
-
-??? success "Resultado esperado"
-    Si la ejecucion termina sin resultados, la CLI mostrara `No results found.`. Eso no significa error de sistema; normalmente significa que `source_dir` no contiene resultados validos.
+Para configurar capturas, descripciones y archivos externos, sigue el [Quick Start](evidencia-robot.md).

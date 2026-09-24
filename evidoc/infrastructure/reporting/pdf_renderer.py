@@ -50,14 +50,26 @@ class PdfReportRenderer(ReportRenderer):
         self._build(output, source_dir, [result])
         return output
 
-    def render_run(self, source_dir: Path, output_dir: Path, results: list[Run]) -> Path:
+    def render_run(
+        self,
+        source_dir: Path,
+        output_dir: Path,
+        results: list[Run],
+        sources: dict[str, Path] | None = None,
+    ) -> Path:
         run_ids = {result.run_id for result in results}
         run_id = results[0].run_id if len(run_ids) == 1 else "combined"
         output = output_dir / f"run-{run_id}.pdf"
-        self._build(output, source_dir, results)
+        self._build(output, source_dir, results, sources)
         return output
 
-    def _build(self, output: Path, source_dir: Path, results: list[Run]) -> None:
+    def _build(
+        self,
+        output: Path,
+        source_dir: Path,
+        results: list[Run],
+        sources: dict[str, Path] | None = None,
+    ) -> None:
         styles = getSampleStyleSheet()
         styles["Title"].textColor = NAVY
         styles["Title"].fontSize = 19
@@ -102,23 +114,17 @@ class PdfReportRenderer(ReportRenderer):
             image_count = 0
             for step in result.steps:
                 color = status_color(step.status)
-                starts_new_page = (
-                    image_count > 0
-                    and image_count % 2 == 0
-                    and any(
-                        artifacts[identifier].type == ArtifactType.IMAGE
-                        for identifier in step.artifact_ids
-                    )
+                heading = Paragraph(
+                    f'<font color="{color}">&#9830;</font> {escape(step.title)} '
+                    f'<font color="{color}">&#9830;</font>',
+                    styles["Heading2"],
                 )
-                if starts_new_page:
-                    story.append(PageBreak())
-                story.append(
-                    Paragraph(
-                        f'<font color="{color}">&#9830;</font> {escape(step.title)} '
-                        f'<font color="{color}">&#9830;</font>',
-                        styles["Heading2"],
-                    )
+                has_image = any(
+                    artifacts[identifier].type == ArtifactType.IMAGE
+                    for identifier in step.artifact_ids
                 )
+                if not has_image:
+                    story.append(heading)
                 for log in step.logs:
                     story.append(Paragraph(escape(log.message), styles["BodyText"]))
                 for identifier in step.artifact_ids:
@@ -131,20 +137,20 @@ class PdfReportRenderer(ReportRenderer):
                             )
                         )
                         continue
-                    if image_count and image_count % 2 == 0 and not starts_new_page:
+                    if image_count == 2:
                         story.append(PageBreak())
+                        image_count = 0
                     image_count += 1
-                    starts_new_page = False
-                    block: list = []
+                    block: list = [heading]
                     if artifact.title and artifact.title != step.title:
                         block.append(Paragraph(escape(artifact.title), styles["BodyText"]))
-                    if artifact.description:
-                        block.append(Paragraph(escape(artifact.description), styles["BodyText"]))
-                    data = image_bytes(source_dir, result, artifact)
+                    data = image_bytes(
+                        (sources or {}).get(result.test_id, source_dir), result, artifact
+                    )
                     if data:
                         reader = ImageReader(BytesIO(data))
                         width, height = reader.getSize()
-                        max_height = 16 * cm if artifact.orientation == "vertical" else 12 * cm
+                        max_height = 16 * cm if artifact.orientation == "vertical" else 9 * cm
                         display_width, display_height = fitted_size(
                             width, height, 17 * cm, max_height
                         )
@@ -153,6 +159,8 @@ class PdfReportRenderer(ReportRenderer):
                         )
                     else:
                         block.append(Paragraph("Imagen no disponible", styles["BodyText"]))
+                    if artifact.description:
+                        block.append(Paragraph(escape(artifact.description), styles["BodyText"]))
                     block.append(Spacer(1, 0.35 * cm))
                     story.append(KeepTogether(block))
                 story.append(Spacer(1, 0.25 * cm))

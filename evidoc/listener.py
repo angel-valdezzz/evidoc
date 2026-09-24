@@ -79,7 +79,12 @@ class Listener:
                     environment=self.environment,
                     brand=self.brand,
                 )
-            api.start_test(getattr(data, "name", "Unnamed test"))
+            name = getattr(data, "name", "Unnamed test")
+            full_name = getattr(data, "longname", None)
+            if full_name is None:
+                api.start_test(name)
+            else:
+                api.start_test(name, full_name=full_name)
             if self.defect:
                 api.set_defect(self.defect)
             self._test_started_at.set(perf_counter())

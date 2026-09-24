@@ -1,37 +1,25 @@
-# Troubleshooting
+# Solución de problemas
 
-## `No results found.`
+## No se genera ningún reporte
 
-Posibles causas:
+Comprueba que `--input-dir` apunta a la carpeta `metadata` con los `result.json`, o a la carpeta final con `merged-results.json`. Si usaste `--exclude-status`, comprueba que no se filtraron todos los casos. Un `build` sin `merge` funciona con la carpeta de una sola corrida.
 
-- `source_dir` apunta a una carpeta equivocada.
-- No existen `result.json` validos.
-- La corrida no llego a persistirse.
+## Falta una captura
 
-## No aparece un screenshot
+Usa `Capture Page Evidence`, `Capture Element Evidence` o `Capture Desktop Evidence` con el listener `--listener evidoc.listener`. En las keywords actuales, el nivel se pasa como argumento posicional (`INFO`, `WARN` o `FAIL`); `description=` agrega texto bajo la imagen. Si usas una keyword anterior, comprueba sus argumentos con `poetry run evidoc docs robot-library`.
 
-Revisa:
+## Falta un archivo en el manifiesto
 
-- si habia una prueba activa,
-- si el driver implementa `screenshot()` o `save_screenshot()`,
-- si la ruta de artefactos pudo escribirse.
+Regístralo con `Attach File    ${ruta}` dentro del caso de prueba. El archivo debe existir cuando se llama a la keyword y seguir existiendo al ejecutar `build`. EviDoc informa el caso y la ruta si encuentra una referencia rota. `Attach Artifact` es una keyword anterior: copia el archivo a la metadata y no lo agrega como archivo externo al manifiesto.
 
-## Un archivo no se adjunta
+## `merge` dice que hay un caso duplicado
 
-La causa mas comun es simple: el path no existe al momento de llamar `attach_file()` o `Attach Artifact`.
+Cada carpeta de entrada debe contener un solo resultado por caso. Revisa si reutilizaste la misma carpeta de metadata para varias ejecuciones o si dos casos tienen el mismo nombre completo. Usa carpetas separadas para run y rerun.
 
-## El reporte sale en un formato distinto al esperado
+## Ya no están las carpetas originales tras `merge`
 
-Prioridad de revision:
+El índice `merged-results.json` apunta a los `result.json` originales y sus imágenes. Mantén las carpetas de run y rerun disponibles durante `build`; `merge` no duplica esos archivos.
 
-1. Argumentos pasados en CLI o TUI.
-2. Configuracion en `evidoc.json` o `evidoc.toml`.
-3. Verifica que hayas pedido `--format docx` o `--format pdf`.
+## Dos casos generan el mismo nombre de reporte
 
-## La evidencia se genera, pero la narrativa es pobre
-
-Eso suele ser un problema de uso, no del motor:
-
-- faltan `Log Step`,
-- los mensajes son demasiado tecnicos,
-- los adjuntos no tienen titulo ni descripcion suficiente.
+EviDoc detiene `build` para evitar sobrescribir un archivo. Diferencia los nombres de los casos que comparten carpeta de salida. En Windows, considera también la longitud total de la ruta del proyecto y del nombre del caso.

@@ -15,6 +15,8 @@ from evidoc.api import (
     log_info,
     log_step,
     log_warning,
+    merge,
+    reference_file,
     set_defect,
     start_test,
 )
@@ -35,6 +37,8 @@ __all__ = [
     "log_info",
     "log_step",
     "log_warning",
+    "merge",
+    "reference_file",
     "set_defect",
     "start_test",
 ]

@@ -1,151 +1,114 @@
-# Evidoc
+# EviDoc
 
-Evidoc almacena evidencia de pruebas estructurada en disco y después genera reportes en PDF o DOCX.
+EviDoc registra evidencias de pruebas automatizadas y crea un PDF o DOCX por caso. Funciona con Robot Framework, Pabot o un pipeline Python. Las capturas y los resultados se guardan durante la ejecución; los reportes se construyen después.
 
-## Instalacion
-
-```bash
-poetry install
-```
-
-## Manual de usuario
-
-Haz el build local del manual tecnico para usuarios finales:
+## Instalación en tu proyecto de pruebas
 
 ```bash
-poetry install --with docs
-poetry run mkdocs build
-poetry run evidoc docs manual
+poetry add "git+https://github.com/angel-valdezzz/evidoc.git#feature/legacy-evidence-reporting"
+poetry add robotframework-seleniumlibrary
+poetry run python -c "import evidoc.robot, evidoc.listener; print(evidoc.robot.__file__)"
 ```
 
-`evidoc docs manual` abre el sitio offline de MkDocs incluido en el paquete instalado. El sitio estatico se almacena en `evidoc/resources/docs/site` para poder distribuirlo dentro del `wheel` generado.
+Usa siempre `poetry run robot` y `poetry run evidoc` desde el mismo proyecto para que compartan el entorno. SeleniumLibrary solo es necesaria para capturas de página o elemento; `Capture Desktop Evidence` no depende del navegador.
 
-## Tests
+## Primer reporte con Robot
 
-La suite de tests se divide en dos capas:
-
-- Unit tests en `tests/unit` para reglas de dominio, servicios de runtime y la capa de API agnostica al framework.
-- Acceptance tests en `tests/acceptance` usando escenarios estilo Gherkin/Cucumber ejecutados con `pytest-bdd`.
-
-Instala las dependencias de testing:
-
-```bash
-poetry install --with test,acceptance
-```
-
-Ejecuta la suite unitaria:
-
-```bash
-poetry run pytest tests/unit -m unit
-```
-
-Ejecuta la suite de acceptance:
-
-```bash
-poetry run pytest tests/acceptance -m acceptance
-```
-
-Ejecuta todo con coverage:
-
-```bash
-poetry run pytest --cov=evidoc
-```
-
-## Calidad de codigo
-
-El proyecto ahora incluye un stack de analisis estatico para calidad y arquitectura:
-
-- `ruff` para lint, formato y ordenamiento de imports.
-- `mypy` para chequeo de tipos.
-- `import-linter` para validar reglas de dependencia entre capas.
-
-Instala el entorno completo de calidad:
-
-```bash
-poetry install --with dev,test,acceptance,docs
-```
-
-Comandos principales:
-
-```bash
-poetry run ruff check .
-poetry run ruff format .
-poetry run mypy evidoc tests scripts
-poetry run lint-imports
-```
-
-Ejecuta todo lo relacionado con calidad en una sola corrida:
-
-```bash
-poetry run ruff check . && poetry run mypy evidoc tests scripts && poetry run lint-imports && poetry run pytest tests/unit -m unit && poetry run pytest tests/acceptance -m acceptance
-```
-
-## VS Code
-
-El repositorio incluye configuracion lista para trabajar desde VS Code:
-
-- formato al guardar con Ruff
-- autofix y organize imports al guardar
-- diagnosticos de `mypy`
-- tareas para `ruff`, `mypy`, `import-linter` y un agregado `Quality: all`
-- compatibilidad con `Error Lens` para mostrar errores inline
-
-Archivos relevantes:
-
-- `.vscode/settings.json`
-- `.vscode/tasks.json`
-- `.vscode/extensions.json`
-- `scripts/vscode_import_lint.py`
-
-Para ver tambien violaciones de arquitectura dentro de VS Code y `Error Lens`, ejecuta la tarea `Import Linter: VSCode diagnostics`. `import-linter` sigue siendo la validacion oficial de arquitectura, y ese script adicional existe solo para traducir esas reglas a diagnosticos por archivo y linea dentro del editor.
-
-## Generar reportes
-
-```bash
-poetry run evidoc generate --source_dir ./results --output_dir ./reports --mode run --format pdf
-poetry run evidoc generate --source_dir ./results --output_dir ./reports --mode single --format docx
-```
-
-## Robot Framework
-
-```bash
-robot --listener evidoc.listener --pythonpath . path/to/tests.robot
-```
-
-Import the keyword library from Robot:
-Importa la libreria de keywords desde Robot:
-
-```robot
-*** Settings ***
-Library    evidoc.robot
-```
-
-Ejemplo minimo:
-
-```robot
-*** Settings ***
-Library    evidoc.robot
-
-*** Test Cases ***
-Capture Evidence
-    Log Step    Open checkout    PASS
-    Log Info    Navigated to checkout
-    Attach Artifact    ${CURDIR}${/}sample.txt    Input data
-```
-
-Un ejemplo ejecutable end-to-end con un driver demo para screenshots se encuentra en `examples/robot/evidoc_example.robot`.
-
-## Evidencia de Robot a PDF/DOCX
+En `resources/evidencia.resource`:
 
 ```robotframework
 *** Settings ***
+Library    SeleniumLibrary
 Library    evidoc.robot
 
-*** Test Cases ***
-Ejemplo
-    Capture Page Evidence    Credenciales ingresadas    INFO
-    Capture Element Evidence    //div[@id="PanelTitular"]    Panel Titular    INFO
-    Capture Desktop Evidence    Evidencia completa    INFO
+*** Keywords ***
+Registrar solicitud
+    Capture Page Evidence    Solicitud registrada    INFO    description=Se muestra el folio asignado
+    Capture Element Evidence    css:#PanelTitular    Panel titular    INFO    description=Datos del titular
 ```
 
-Ejecuta con `robot --outputdir output --listener evidoc.listener tests/` (para página y elemento carga también SeleniumLibrary y abre un navegador). Después usa `evidoc build --input-dir output/evidoc/metadata --output-dir output/evidoc/reports --formats pdf,docx`, o `from evidoc import build` dentro de tu pipeline Python. [Quick Start completo](docs/primeros-pasos/evidencia-robot.md).
+En la suite importa `Resource    ../resources/evidencia.resource`, abre el navegador y llama `Registrar solicitud`. Activa el listener **en el comando**, no en el recurso:
+
+```bash
+poetry run robot --outputdir output --listener evidoc.listener tests/
+poetry run evidoc build --input-dir output/evidoc/metadata --output-dir output/evidoc/reports --formats pdf,docx
+```
+
+Los reportes y `upload-manifest.json` quedan en `output/evidoc/reports`. El manifiesto agrupa las rutas absolutas por caso para una herramienta externa de carga. Sin `--exclude-status`, `build` incluye todos los estados.
+
+## Archivos descargados
+
+Registra la **ruta final** una vez que el archivo esté descargado y renombrado:
+
+```robotframework
+Attach File    ${RUTA_CARATULA}    description=Carátula de la póliza
+```
+
+`Attach File` no copia el archivo ni lo introduce en PDF/DOCX. EviDoc verifica que siga existiendo al construir el manifiesto. `Attach Artifact` conserva su comportamiento anterior de copiar un archivo a metadata; úsalo solo si necesitas esa copia.
+
+## Run y rerun
+
+Si reejecutas los casos fallidos, conserva las dos carpetas de metadata y fusiona los resultados antes de construir los reportes:
+
+```bash
+poetry run evidoc merge --input-dir output/run/evidoc/metadata --input-dir output/rerun/evidoc/metadata --output-dir output/final/evidoc/metadata
+poetry run evidoc build --input-dir output/final/evidoc/metadata --output-dir output/final/evidoc/reports --formats pdf,docx --exclude-status FAIL,SKIP
+```
+
+`merge` toma el último intento completo de cada caso. No copia capturas: la metadata final apunta a las carpetas originales, que deben permanecer disponibles. `build` filtra **después** de fusionar. Si ejecutas Robot una sola vez, omite `merge` y usa `build` directamente sobre su metadata.
+
+Con Pabot, pasa a todos los workers el mismo directorio de metadata:
+
+```bash
+poetry run pabot --outputdir output/run/robot --listener evidoc.listener.Listener:output/run/evidoc/metadata:file tests/
+```
+
+## Pipeline Python
+
+```python
+from robot import run
+from evidoc import build, merge
+
+run("tests", outputdir="output/run/robot", listener="evidoc.listener")
+# Si hubo rerun, usa primero merge([metadata_run, metadata_rerun], metadata_final).
+reports = build(
+    input_dir="output/run/robot/evidoc/metadata",
+    output_dir="output/run/reports",
+    formats=["pdf", "docx"],
+    exclude_status=["FAIL", "SKIP"],
+)
+```
+
+`build()` devuelve una lista de rutas `Path` a los reportes. Tanto CLI como API usan el mismo caso de uso. `exclude_status` admite un estado (`"FAIL"`) o una lista. `evidoc generate` sigue disponible para los flujos anteriores.
+
+## Configuración opcional
+
+EviDoc lee `evidoc.toml` (o `evidoc.json`) desde el directorio donde ejecutas el comando. Los argumentos explícitos prevalecen:
+
+```toml
+metadata_dir = "output/evidoc/metadata"
+output_dir = "output/evidoc/reports"
+application = "VisualTime"
+project = "Espartaco"
+environment = "QA"
+formats = ["pdf", "docx"]
+storage = "file"  # o "base64" para imágenes embebidas en result.json
+mode = "single"
+exclude_status = ["FAIL", "SKIP"]
+```
+
+Las capturas de página y elemento usan SeleniumLibrary. Las de escritorio usan una sesión gráfica activa. EviDoc muestra como máximo dos capturas por página, con la descripción debajo de cada imagen.
+
+## Manual y desarrollo
+
+Consulta el [Quick Start detallado](docs/primeros-pasos/evidencia-robot.md) y el [manual](docs/index.md). Para abrir la versión offline incluida en el paquete, usa `poetry run evidoc docs manual`.
+
+```bash
+poetry install --with dev,test,acceptance,docs
+poetry run pytest
+poetry run ruff check .
+poetry run ruff format --check .
+poetry run mypy evidoc tests scripts
+poetry run lint-imports
+poetry run mkdocs build
+```

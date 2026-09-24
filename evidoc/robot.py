@@ -69,7 +69,12 @@ class RobotLibrary:
 
     @staticmethod
     def _capture(
-        target: Any, title: str, status: str, kind: str, orientation: str | None
+        target: Any,
+        title: str,
+        status: str,
+        kind: str,
+        orientation: str | None,
+        description: str | None = None,
     ) -> str | None:
         try:
             return api.capture_image(
@@ -78,6 +83,7 @@ class RobotLibrary:
                 status=status,
                 capture=kind,
                 orientation=orientation,
+                description=description,
             )
         except Exception as exc:
             RobotLibrary._warning(f"Unable to capture {kind} evidence: {exc}")
@@ -85,10 +91,16 @@ class RobotLibrary:
 
     @keyword("Capture Page Evidence")
     def capture_page_evidence(
-        self, title: str, status: str = "INFO", orientation: str | None = None
+        self,
+        title: str,
+        status: str = "INFO",
+        orientation: str | None = None,
+        description: str | None = None,
     ) -> str | None:
         try:
-            return self._capture(self._selenium().driver, title, status, "page", orientation)
+            return self._capture(
+                self._selenium().driver, title, status, "page", orientation, description
+            )
         except Exception as exc:
             self._warning(f"Unable to capture page evidence: {exc}")
             return None
@@ -101,20 +113,25 @@ class RobotLibrary:
         status: str = "INFO",
         orientation: str | None = None,
         include_page: bool = False,
+        description: str | None = None,
     ) -> str | None:
         try:
             library = self._selenium()
             element = library.find_element(locator)
             if include_page:
                 self._capture(library.driver, f"Contexto: {title}", status, "page", orientation)
-            return self._capture(element, title, status, "element", orientation)
+            return self._capture(element, title, status, "element", orientation, description)
         except Exception as exc:
             self._warning(f"Unable to capture element evidence: {exc}")
             return None
 
     @keyword("Capture Desktop Evidence")
     def capture_desktop_evidence(
-        self, title: str, status: str = "INFO", orientation: str | None = None
+        self,
+        title: str,
+        status: str = "INFO",
+        orientation: str | None = None,
+        description: str | None = None,
     ) -> str | None:
         try:
             return api.capture_image(
@@ -123,6 +140,7 @@ class RobotLibrary:
                 status=status,
                 capture="desktop",
                 orientation=orientation,
+                description=description,
             )
         except Exception as exc:
             self._warning(f"Unable to capture desktop evidence: {exc}")
@@ -202,6 +220,11 @@ class RobotLibrary:
         """
         return api.attach_artifact(path, description)
 
+    @keyword("Attach File")
+    def attach_file(self, path: str | Path, description: str | None = None) -> str | None:
+        """Register the final path of a file for the upload manifest without copying it."""
+        return api.reference_file(path, description)
+
     @keyword("Log Info")
     def log_info(self, message: str) -> None:
         """<p>Agrega un mensaje informativo al paso actual.</p>"""
@@ -228,9 +251,12 @@ _LIBRARY = RobotLibrary()
 
 @keyword("Capture Page Evidence")
 def capture_page_evidence(
-    title: str, status: str = "INFO", orientation: str | None = None
+    title: str,
+    status: str = "INFO",
+    orientation: str | None = None,
+    description: str | None = None,
 ) -> str | None:
-    return cast(str | None, _LIBRARY.capture_page_evidence(title, status, orientation))
+    return cast(str | None, _LIBRARY.capture_page_evidence(title, status, orientation, description))
 
 
 @keyword("Capture Element Evidence")
@@ -240,10 +266,13 @@ def capture_element_evidence(
     status: str = "INFO",
     orientation: str | None = None,
     include_page: bool = False,
+    description: str | None = None,
 ) -> str | None:
     return cast(
         str | None,
-        _LIBRARY.capture_element_evidence(locator, title, status, orientation, include_page),
+        _LIBRARY.capture_element_evidence(
+            locator, title, status, orientation, include_page, description
+        ),
     )
 
 
@@ -254,9 +283,14 @@ def set_defect(defect: str) -> None:
 
 @keyword("Capture Desktop Evidence")
 def capture_desktop_evidence(
-    title: str, status: str = "INFO", orientation: str | None = None
+    title: str,
+    status: str = "INFO",
+    orientation: str | None = None,
+    description: str | None = None,
 ) -> str | None:
-    return cast(str | None, _LIBRARY.capture_desktop_evidence(title, status, orientation))
+    return cast(
+        str | None, _LIBRARY.capture_desktop_evidence(title, status, orientation, description)
+    )
 
 
 @keyword("Log Step")
@@ -287,6 +321,11 @@ def capture_screenshot(
 @keyword("Attach Artifact")
 def attach_artifact(path: str | Path, description: str | None = None) -> str | None:
     return cast(str | None, _LIBRARY.attach_artifact(path, description))
+
+
+@keyword("Attach File")
+def attach_file(path: str | Path, description: str | None = None) -> str | None:
+    return cast(str | None, _LIBRARY.attach_file(path, description))
 
 
 @keyword("Log Info")

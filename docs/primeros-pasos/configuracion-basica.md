@@ -1,53 +1,32 @@
-# Configuracion basica
+# Configuración básica
 
-## Archivos soportados
-
-Evidoc autodetecta estos nombres en el directorio actual:
-
-- `evidoc.toml`
-- `evidoc.json`
-
-Si ambos faltan, usa valores por defecto o los sobrescribe con argumentos de CLI/TUI.
-
-## Ejemplo en JSON
-
-```json
-{
-  "source_dir": "./results",
-  "output_dir": "./reports",
-  "format": "docx",
-  "mode": "single",
-  "application": "Portal QA",
-  "requirement": "LOGIN-002"
-}
-```
-
-## Ejemplo en TOML
+EviDoc busca `evidoc.toml` o `evidoc.json` en el directorio donde ejecutas Robot y `build`. Puedes indicar otro archivo con `--config` o pasar rutas en la CLI.
 
 ```toml
-source_dir = "./results"
-output_dir = "./reports"
-format = "pdf"
-mode = "run"
+metadata_dir = "output/run/robot/evidoc/metadata"
+output_dir = "output/run/robot/evidoc/reports"
+formats = ["pdf", "docx"]
+mode = "single"
+storage = "file"
 application = "Portal QA"
-requirement = "LOGIN-002"
 ```
 
-## Campos validos
+El listener escribe en `metadata_dir` y `build` lee esa carpeta. Si omites `metadata_dir`, el listener usa `${OUTPUT DIR}/evidoc/metadata`. `output_dir` recibe los PDF/DOCX y `upload-manifest.json`.
 
-| Campo | Tipo | Uso |
-| --- | --- | --- |
-| `source_dir` | `string` | Directorio donde viven los resultados capturados |
-| `output_dir` | `string` | Directorio destino para reportes |
-| `format` | `pdf` o `docx` | Formato final del reporte |
-| `mode` | `run` o `single` | Consolidado o individual |
-| `application` | `string \| null` | Metadato disponible en configuracion |
-| `requirement` | `string \| null` | Metadato disponible en configuracion |
+| Campo | Uso |
+| --- | --- |
+| `metadata_dir` | Carpeta que comparten listener y `build`. |
+| `output_dir` | Carpeta de reportes y manifiesto. |
+| `formats` | Lista de formatos: `pdf`, `docx`. |
+| `mode` | `single`: un documento por caso; `run`: uno por corrida. |
+| `storage` | `file`: PNG por separado; `base64`: imagen en JSON. |
+| `exclude_status` | Estado o lista de estados omitidos al construir reportes y manifiesto. |
+| `application`, `requirement`, `project`, `environment`, `brand` | Datos guardados en cada resultado. |
 
-!!! tip "Orden de prioridad"
-    Los valores pasados por CLI/TUI tienen prioridad sobre el archivo de configuracion cuando se proporcionan explicitamente.
+También se aceptan `source_dir` y `format` para configuraciones anteriores. Los argumentos explícitos de `build` tienen prioridad sobre el archivo de configuración. El filtro, si lo necesitas, puede escribirse así:
 
-!!! note "Alcance actual"
-    El listener toma `application`, `requirement`, `project`, `environment` y `brand` de este archivo y los guarda en cada resultado. `Set Defect` puede añadir la referencia de defecto por caso.
+```toml
+exclude_status = ["FAIL", "SKIP"]
+```
 
-Para los campos nuevos `metadata_dir`, `formats` y `storage`, y la integración directa con `build()`, consulta el [Quick Start de evidencia](evidencia-robot.md).
+Para dos tandas de pruebas, utiliza `merge` y pasa su carpeta de salida como `--input-dir` de `build`. Consulta [Run y rerun](../guias/cli.md).

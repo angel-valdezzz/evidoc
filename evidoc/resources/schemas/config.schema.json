@@ -10,6 +10,7 @@
     "format": { "type": "string", "enum": ["pdf", "docx"] },
     "formats": { "type": "array", "items": {"type": "string", "enum": ["pdf", "docx"]}, "minItems": 1, "uniqueItems": true },
     "mode": { "type": "string", "enum": ["single", "run"] },
+    "exclude_status": {"oneOf": [{"type": "string"}, {"type": "array", "items": {"type": "string"}}]},
     "application": { "type": ["string", "null"] },
     "requirement": { "type": ["string", "null"] },
     "project": { "type": ["string", "null"] },

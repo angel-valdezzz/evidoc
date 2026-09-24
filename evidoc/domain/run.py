@@ -51,6 +51,7 @@ class Run:
             "generated_at": self.generated_at,
             "test_case": {
                 "name": self.test_case.name,
+                **({"full_name": self.test_case.full_name} if self.test_case.full_name else {}),
                 "status": self.test_case.status.value,
                 "duration": self.test_case.duration,
                 "application": self.test_case.application,
@@ -91,6 +92,7 @@ class Run:
                         if artifact.orientation is not None
                         else {}
                     ),
+                    **({"external": True} if artifact.external else {}),
                 }
                 for artifact in self.artifacts
             ],

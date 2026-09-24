@@ -66,6 +66,7 @@ def run_from_dict(payload: dict[str, Any]) -> Run:
         generated_at=payload["generated_at"],
         test_case=TestCase(
             name=payload["test_case"]["name"],
+            full_name=payload["test_case"].get("full_name"),
             status=Status(payload["test_case"]["status"]),
             duration=payload["test_case"]["duration"],
             application=payload["test_case"].get("application"),
@@ -102,6 +103,7 @@ def run_from_dict(payload: dict[str, Any]) -> Run:
                 data=artifact.get("data"),
                 capture=artifact.get("capture"),
                 orientation=artifact.get("orientation"),
+                external=artifact.get("external", False),
             )
             for artifact in payload.get("artifacts", [])
         ),

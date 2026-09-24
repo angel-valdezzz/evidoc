@@ -18,3 +18,4 @@ class TestCase:
     brand: str | None = None
     defect: str | None = None
     tags: tuple[str, ...] = ()
+    full_name: str | None = None

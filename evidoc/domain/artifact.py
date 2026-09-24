@@ -13,3 +13,4 @@ class Artifact:
     data: str | None = None
     capture: str | None = None
     orientation: str | None = None
+    external: bool = False

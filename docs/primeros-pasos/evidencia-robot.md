@@ -22,14 +22,14 @@ Library    evidoc.robot
 *** Test Cases ***
 Solicitud del titular
     Open Browser    https://example.org    chrome
-    Capture Page Evidence    Credenciales ingresadas    INFO
-    Capture Element Evidence    //div[@id="PanelTitular"]    Panel Titular    INFO    include_page=True
+    Capture Page Evidence    Credenciales ingresadas    INFO    description=Formulario listo
+    Capture Element Evidence    //div[@id="PanelTitular"]    Panel Titular    INFO    include_page=True    description=Datos del titular
     Set Defect    BUG-123
     Capture Desktop Evidence    Evidencia completa    INFO
     Close Browser
 ```
 
-Sustituye la URL y el locator del ejemplo por los de tu aplicación. Las capturas de página usan el viewport del navegador activo en SeleniumLibrary; las de elemento usan su locator (incluidos prefijos como `css:` o `xpath:`); las de escritorio usan la pantalla completa del sistema y pueden incluir barra de direcciones, fecha y otras ventanas. Para un elemento, `include_page=True` añade primero la captura de contexto y luego la del elemento; si solo quieres el recorte, omite el argumento. Las imágenes pequeñas se amplían hasta el ancho o alto disponible sin deformarlas. `orientation=horizontal` o `orientation=vertical` ajusta el espacio reservado para la imagen. La captura de escritorio puede fallar sin sesión gráfica (por ejemplo, un agente CI sin display); EviDoc registra una advertencia sin fallar el caso.
+Sustituye la URL y el locator por los de tu aplicación. La captura de página muestra el área visible del navegador; la de elemento usa un locator de SeleniumLibrary; la de escritorio muestra la pantalla completa. `description=` aparece debajo de la imagen. `include_page=True` agrega una vista general antes del recorte del elemento. `orientation=horizontal` o `vertical` ajusta el espacio de la imagen. Sin una sesión gráfica, la captura de escritorio registra una advertencia.
 
 El resumen del informe conserva la tabla azul del reporte anterior: Aplicación, Requerimiento, Caso de Prueba, Estatus, Duración y la nueva fila roja **Defecto**. `Set Defect` la rellena para el caso actual; de lo contrario queda vacía. Marca, proyecto, fecha y ambiente aparecen en el encabezado o pie del reporte.
 
@@ -44,11 +44,11 @@ Library    evidoc.robot
 
 *** Keywords ***
 Registrar página
-    [Arguments]    ${titulo}
-    Capture Page Evidence    ${titulo}    INFO
+    [Arguments]    ${titulo}    ${descripcion}=${EMPTY}
+    Capture Page Evidence    ${titulo}    INFO    description=${descripcion}
 
 Registrar panel titular
-    Capture Element Evidence    //div[@id="PanelTitular"]    Panel Titular    INFO    orientation=horizontal    include_page=True
+    Capture Element Evidence    //div[@id="PanelTitular"]    Panel Titular    INFO    orientation=horizontal    include_page=True    description=Datos verificados
 
 Registrar escritorio
     Capture Desktop Evidence    Evidencia completa    INFO
@@ -78,7 +78,7 @@ poetry run robot --outputdir output --listener evidoc.listener tests/
 poetry run evidoc build --input-dir output/evidoc/metadata --output-dir output/evidoc/reports --formats pdf,docx
 ```
 
-El listener toma `${OUTPUT DIR}` de Robot. Por defecto escribe `output/evidoc/metadata/run-<id>/test-<id>/result.json`; con almacenamiento `file`, la misma carpeta contiene `artifacts/*.png`. Los informes se generan en `output/evidoc/reports` al ejecutar `build`. Robot continúa escribiendo `output.xml`, `log.html` y `report.html` directamente en `output`.
+El listener toma `${OUTPUT DIR}` de Robot. Por defecto escribe `output/evidoc/metadata/run-<id>/test-<id>/result.json`; con almacenamiento `file`, la misma carpeta contiene `artifacts/*.png`. `build` genera los reportes y `upload-manifest.json` en `output/evidoc/reports`. Robot continúa escribiendo `output.xml`, `log.html` y `report.html` directamente en `output`.
 
 La configuración opcional del listener usa los argumentos posicionales de Robot, en este orden: `root_dir`, `storage`, `application`, `requirement`. Para cambiar storage y mantener el directorio por defecto, indica explícitamente el directorio:
 
@@ -95,11 +95,45 @@ evidoc build --input-dir output/evidoc/metadata --output-dir output/evidoc/repor
 
 Cada caso tiene un ID único. El ID de ejecución se crea atómicamente y se comparte por los workers que apuntan al mismo directorio. Usa un directorio nuevo por ejecución para no mezclar resultados anteriores.
 
+## Archivos descargados y manifiesto
+
+Si el caso descarga una carátula o cotización, espera a que termine la descarga, renombra el archivo y registra su ruta final:
+
+```robotframework
+Attach File    ${RUTA_CARATULA}    description=Carátula de la póliza
+```
+
+EviDoc **no copia** el archivo ni lo introduce en el reporte. La ruta absoluta aparece junto a las rutas PDF/DOCX del caso en `upload-manifest.json`:
+
+```json
+{
+  "tests": [
+    {
+      "name": "TC036",
+      "files": ["C:\\output\\reports\\TC036.pdf", "C:\\output\\descargas\\caratula.pdf"]
+    }
+  ]
+}
+```
+
+El archivo debe permanecer en esa ruta hasta que lo consuma tu herramienta de carga. Si desaparece antes de `build`, EviDoc detiene la construcción con un error que identifica el caso y la ruta. `Attach Artifact` conserva su función anterior de copiar archivos a metadata.
+
+## Run y rerun sin reportes duplicados
+
+Si el rerun solo ejecuta los fallidos, crea metadata separada para ambas tandas. Fusiona primero; el segundo directorio reemplaza los casos repetidos, incluso si volvieron a fallar:
+
+```bash
+poetry run evidoc merge --input-dir output/run/evidoc/metadata --input-dir output/rerun/evidoc/metadata --output-dir output/final/evidoc/metadata
+poetry run evidoc build --input-dir output/final/evidoc/metadata --output-dir output/final/evidoc/reports --formats pdf,docx --exclude-status FAIL,SKIP
+```
+
+`merge` crea un índice de rutas y no duplica capturas. Conserva las carpetas originales. `build` excluye los estados indicados **después** de elegir el último intento y solo esos casos aparecen en el manifiesto. Una ejecución sencilla usa `build` directamente, sin `merge`. Un único estado también funciona: `--exclude-status FAIL`.
+
 ## Python sin subprocess
 
 ```python
 from robot import run
-from evidoc import build
+from evidoc import build, merge
 
 code = run("tests", outputdir="output", listener="evidoc.listener")
 reports = build(
@@ -110,7 +144,7 @@ reports = build(
 print(code, reports)
 ```
 
-`build()` retorna una lista de `Path`. Sin `mode` en la configuración, genera un documento por caso y formato seleccionado; el nombre del archivo es el nombre seguro del caso (por ejemplo, `CPA-D-SAAS-283-TC036.pdf`), sin ID adicional. `mode="run"` genera uno combinado por formato. Si dos casos producen el mismo nombre de archivo en un directorio de metadata, `build` se detiene para evitar sobrescribir un reporte; separa las ejecuciones en directorios distintos. Sin lista explícita de formatos ni configuración, el formato predeterminado es PDF. `evidoc generate` permanece disponible para los flujos anteriores.
+`build()` retorna una lista de `Path` a los reportes; también escribe el manifiesto. Para fusionar, `merge([metadata_run, metadata_rerun], metadata_final)` retorna la ruta de `merged-results.json`. Sin `mode` en la configuración, se genera un documento por caso; `mode="run"` crea uno combinado. El nombre individual es el nombre seguro del caso, sin ID adicional. Si dos casos producirían el mismo archivo, `build` avisa para no sobrescribirlo. `evidoc generate` permanece disponible para flujos anteriores.
 
 ## `evidoc.toml`
 
@@ -126,6 +160,7 @@ brand = "AXA"
 formats = ["pdf", "docx"]
 storage = "base64"  # o "file"
 mode = "single"
+exclude_status = ["FAIL", "SKIP"]  # opcional
 ```
 
 En este caso bastan `robot --outputdir output --listener evidoc.listener tests/` y `evidoc build`. Un argumento explícito de listener, CLI o `build()` prevalece sobre el TOML. También acepta `aplicacion`, `proyecto` y `ambiente` como aliases de las claves en inglés; no declares las dos versiones de una clave. `source_dir` y `format` antiguos siguen siendo válidos para `evidoc generate`. `metadata_dir` indica la ruta compartida para el listener y `build`, incluso con Pabot. Puedes pasar `config_path="ruta/evidoc.toml"` a `build()` o `--config ruta/evidoc.toml` al CLI.
@@ -134,8 +169,8 @@ El archivo se llama `evidoc.toml` y se busca en el directorio desde el que lanza
 
 ## Almacenamiento y metadatos
 
-`file` guarda PNG independientes y su ruta relativa en `result.json`. `base64` incrusta los bytes de cada PNG en `data` y evita crear PNG separados. Los adjuntos no fotográficos siguen siendo archivos. Ambos formatos de reporte usan el mismo modelo de resultado y aceptan ambas estrategias. PDF es el documento de entrega; DOCX conserva tablas, textos e imágenes editables en Word.
+`file` guarda PNG independientes y su ruta relativa en `result.json`. `base64` incrusta los bytes del PNG en `data`. Estas opciones afectan a las **capturas**; `Attach File` conserva una referencia a un archivo externo, sin copiarlo. PDF es el documento de entrega; DOCX permite editar el texto posteriormente.
 
 Los artefactos de imagen registran `capture` (`page`, `element` o `desktop`) y `orientation`. Los pasos y sus referencias a artefactos conservan el orden en que se invocaron las keywords. Las APIs anteriores `Capture Screenshot`, `Log Step`, `Log Info`, `Attach Artifact` y `evidoc generate` siguen disponibles.
 
-En PDF y DOCX, el color de los diamantes junto al título indica el estado del paso (`INFO`, `WARN`, `FAIL`, etc.); el estado no se repite debajo del título. Las dimensiones y la paginación de las capturas permanecen iguales.
+En PDF y DOCX, el color de los diamantes indica el estado del paso. Cada página tiene como máximo dos capturas y la descripción aparece debajo de la imagen.

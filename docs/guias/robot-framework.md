@@ -1,91 +1,27 @@
 # Robot Framework
 
-Para la integración nueva de tres capturas, configuración del listener, almacenamiento y Pabot, consulta el [Quick Start](../primeros-pasos/evidencia-robot.md). Las keywords de esta página siguen disponibles por compatibilidad.
-
-## Integraciones disponibles
-
-Evidoc expone dos puntos de integracion para Robot Framework:
-
-- `evidoc.listener` para abrir y cerrar automaticamente el contexto por prueba.
-- `evidoc.robot` como libreria de keywords.
-
-## Referencia oficial de keywords
-
-La referencia mas precisa para las keywords no vive escrita a mano: se genera con `Robot Framework libdoc` a partir de los docstrings tecnicos de `evidoc.robot`.
+El listener guarda un `result.json` por prueba. La librería proporciona las keywords para capturar evidencias y registrar archivos descargados.
 
 ```bash
-poetry run evidoc docs robot-library
+poetry run robot --outputdir output/run/robot --listener evidoc.listener tests/
+poetry run evidoc build --input-dir output/run/robot/evidoc/metadata --output-dir output/run/robot/evidoc/reports
 ```
 
-Ese comando abre el HTML empaquetado con el wheel instalado localmente.
-
-Si necesitas el manual tecnico completo sin levantar `mkdocs serve`, usa:
-
-```bash
-poetry run evidoc docs manual
-```
-
-## Configuracion minima
-
-```bash
-robot --listener evidoc.listener --pythonpath . path\to\tests.robot
-```
-
-```robotframework
-*** Settings ***
-Library    evidoc.robot
-```
-
-## Keywords disponibles
-
-| Keyword | Uso |
-| --- | --- |
-| `Log Step` | Registra un paso |
-| `Capture Screenshot` | Captura screenshot desde driver o libreria |
-| `Attach Artifact` | Adjunta un archivo |
-| `Log Info` | Log informativo |
-| `Log Warning` | Log de advertencia |
-| `Log Error` | Log de error |
-
-## Ejemplo completo
-
-```robotframework
-*** Settings ***
-Library    evidoc.robot
-Library    examples.robot.support.SupportLibrary
-
-*** Variables ***
-${CHECKOUT_TITLE}    Checkout page
-
-*** Test Cases ***
-Capture Evidence With Evidoc
-    ${artifact_path}=    Create Demo Artifact    ${OUTPUT DIR}${/}sample.txt
-    ${driver}=    Get Demo Driver
-    Registrar evidencia de checkout    ${driver}    ${artifact_path}
-
-*** Keywords ***
-Registrar evidencia de checkout
-    [Arguments]    ${driver}    ${artifact_path}
-    Log Step    Open checkout    PASS
-    Log Info    Entering checkout flow
-    Attach Artifact    ${artifact_path}    Input fixture used by the test
-    Capture Screenshot    driver=${driver}    title=${CHECKOUT_TITLE}    description=Before submit
-    Log Warning    Checkout is slower than expected
-    Log Error    Validation summary example
-```
-
-## Modo alterno con `library=`
-
-Si el driver vive dentro de otra libreria de Robot:
+En tu suite o archivo `.resource`:
 
 ```robotframework
 *** Settings ***
 Library    evidoc.robot
 
 *** Test Cases ***
-Capture Screenshot From External Library
-    Capture Screenshot    library=SeleniumLibrary    title=Resultado visible
+Solicitud completada
+    Capture Page Evidence    Credenciales ingresadas    INFO    description=Formulario enviado
+    Capture Element Evidence    //div[@id="PanelTitular"]    Titular    INFO    description=Datos confirmados
+    Attach File    ${OUTPUT DIR}${/}caratula.pdf    description=Carátula descargada
 ```
 
-??? tip "Patron recomendado"
-    Usa `Log Step` para dividir la narrativa funcional y luego agrega logs y artefactos dentro de ese paso. Asi el reporte conserva una lectura cronologica clara.
+`description` aparece debajo de la imagen en los reportes. `Attach File` registra la ruta absoluta del archivo en la metadata, sin copiarlo ni mostrarlo en el PDF o DOCX. Después de `build`, el archivo aparece en `upload-manifest.json`. Conserva el archivo original para que el proceso posterior pueda leerlo.
+
+También están disponibles `Capture Desktop Evidence`, `Set Defect`, `Log Step`, `Log Info`, `Log Warning`, `Log Error` y las keywords anteriores `Capture Screenshot` y `Attach Artifact`. Esta última copia el archivo a la metadata y conserva su comportamiento previo.
+
+Consulta el [Quick Start](../primeros-pasos/evidencia-robot.md) para opciones de captura, almacenamiento y Pabot. Abre la referencia de todas las keywords con `poetry run evidoc docs robot-library`.

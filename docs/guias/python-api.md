@@ -1,57 +1,55 @@
-# Python API
+# API Python
 
-Para ejecutar `robot.run(...)` y luego `evidoc.build(...)` en el mismo proceso, consulta el [Quick Start](../primeros-pasos/evidencia-robot.md). `build(input_dir, output_dir, formats=["pdf", "docx"])` retorna las rutas generadas.
-
-## Cuando usarla
-
-La API es la opcion correcta si quieres integrar Evidoc dentro de una automatizacion Python o dentro de una herramienta interna.
-
-## Ciclo minimo
+Puedes ejecutar Robot y construir los reportes en el mismo proceso. No necesitas llamar al CLI desde `subprocess`:
 
 ```python
-from evidoc import api
+from robot import run
+from evidoc import build
 
-api.configure_context(root_dir="./results")
-api.start_test("Checkout happy path")
-api.log_step("Open checkout", "PASS")
-api.log_info("Checkout page loaded")
-api.attach_file("./examples/sample_attachment.txt", "Datos usados en la prueba")
-api.end_test("PASS", 2.84)
+code = run("tests", outputdir="output", listener="evidoc.listener")
+reports = build(
+    input_dir="output/evidoc/metadata",
+    output_dir="output/evidoc/reports",
+    formats=["pdf", "docx"],
+)
+print(code, reports)
 ```
 
-## Operaciones disponibles
+`build()` devuelve rutas `Path` a los PDF/DOCX. También crea `upload-manifest.json` en `output_dir`. Para no crear reportes de ciertos estados, pasa `exclude_status="FAIL"` o `exclude_status=["FAIL", "SKIP"]`. El mismo filtro determina qué casos aparecen en el manifiesto.
 
-| Operacion | Efecto |
-| --- | --- |
-| `configure_context(...)` | Define `root_dir` y esquema |
-| `start_test(name)` | Abre contexto de prueba |
-| `log_step(title, status)` | Registra un paso |
-| `log_info`, `log_warning`, `log_error` | Agrega logs al paso actual |
-| `capture_screenshot(driver, ...)` | Captura imagen desde un driver compatible |
-| `attach_file(path, description)` | Adjunta un archivo existente |
-| `end_test(status, duration)` | Cierra y persiste la prueba |
-| `clear_context()` | Limpia el contexto actual |
+## Run y rerun
 
-## Ejemplo con screenshots
+Cuando hayas ejecutado dos tandas, fusiona su metadata **antes** de construir los reportes:
 
 ```python
-from pathlib import Path
-from evidoc import api
+from evidoc import build, merge
 
-
-class DemoDriver:
-    def screenshot(self, path: str) -> bool:
-        Path(path).write_bytes(b"png")
-        return True
-
-
-api.configure_context(root_dir="./results")
-api.start_test("Login valid user")
-api.log_step("Open login page", "PASS")
-api.capture_screenshot(DemoDriver(), title="Login page", description="Estado inicial")
-api.log_info("Form rendered correctly")
-api.end_test("PASS", 1.12)
+index = merge(
+    ["output/run/evidoc/metadata", "output/rerun/evidoc/metadata"],
+    "output/final/evidoc/metadata",
+)
+reports = build(
+    input_dir=index.parent,
+    output_dir="output/final/evidoc/reports",
+    formats=["pdf", "docx"],
+    exclude_status=["FAIL", "SKIP"],
+)
 ```
 
-!!! warning "Regla de contexto"
-    Si llamas `log_step`, `log_info` o `capture_screenshot` sin una prueba activa, Evidoc no rompe la ejecucion, pero emitira advertencias y no persistira esa evidencia de la forma esperada.
+`merge()` devuelve la ruta de `merged-results.json`. Si el mismo caso se ejecutó dos veces, conserva el intento completo de la última carpeta. Los archivos originales permanecen en sus directorios; no se copian durante la fusión. Con una sola ejecución, llama directamente a `build()`.
+
+## Capturas y archivos desde Python
+
+La API de captura acepta bytes PNG sin depender de Selenium:
+
+```python
+from evidoc.api import EvidocAPI
+
+api = EvidocAPI(root_dir="output/evidoc/metadata")
+api.start_test("TC036", full_name="Solicitud.TC036")
+api.capture_image(png_bytes, title="Solicitud registrada", description="Folio visible")
+api.reference_file("output/descargas/caratula.pdf", "Carátula de la póliza")
+api.end_test("PASS", 12.5)
+```
+
+`reference_file` guarda la ruta absoluta para el manifiesto sin copiar el archivo. `attach_file` y `attach_artifact` conservan la API previa que copia el archivo a metadata. `start_test(full_name=...)` permite identificar el mismo caso entre ejecuciones; en Robot el listener proporciona ese dato automáticamente.

@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import base64
 import logging
+from collections.abc import Sequence
 from contextvars import ContextVar
 from pathlib import Path
 from typing import Any, TypedDict
 from uuid import uuid4
 
 from evidoc.application.in_memory_warning_sink import InMemoryWarningSink
+from evidoc.application.merge_results_use_case import MergeResultsUseCase
+from evidoc.application.upload_manifest_use_case import external_files, write_upload_manifest
 from evidoc.application.warning_sink import WarningSink
 from evidoc.domain import run_from_dict
 from evidoc.domain.artifact import Artifact
@@ -75,6 +78,7 @@ class EvidocAPI:
         self._defect: str | None = None
         self._run_id: str | None = None
         self._current_test_name: str | None = None
+        self._current_test_full_name: str | None = None
         self._current_test_id: str | None = None
         self._steps: list[dict[str, Any]] = []
         self._artifacts: list[Artifact] = []
@@ -92,7 +96,7 @@ class EvidocAPI:
         messages = getattr(self._warning_sink, "messages", [])
         return list(messages)
 
-    def start_test(self, test_name: str) -> str | None:
+    def start_test(self, test_name: str, *, full_name: str | None = None) -> str | None:
         try:
             if self._current_test_id is not None:
                 self._warn("A previous test was still active. Closing it with WARN status.")
@@ -100,6 +104,7 @@ class EvidocAPI:
             self._run_id = self._result_repository.get_or_create_run_id(self._root_dir)
             self._current_test_id = self._generate_test_id()
             self._current_test_name = test_name or "Unnamed test"
+            self._current_test_full_name = full_name
             self._steps = []
             self._artifacts = []
             self._defect = None
@@ -123,6 +128,11 @@ class EvidocAPI:
                 "generated_at": self._timestamp(),
                 "test_case": {
                     "name": self._current_test_name,
+                    **(
+                        {"full_name": self._current_test_full_name}
+                        if self._current_test_full_name
+                        else {}
+                    ),
                     "status": safe_status.value,
                     "duration": max(float(duration), 0.0),
                     "application": self._application,
@@ -159,6 +169,7 @@ class EvidocAPI:
                         **({"data": artifact.data} if artifact.data is not None else {}),
                         **({"capture": artifact.capture} if artifact.capture else {}),
                         **({"orientation": artifact.orientation} if artifact.orientation else {}),
+                        **({"external": True} if artifact.external else {}),
                     }
                     for artifact in self._artifacts
                 ],
@@ -172,6 +183,7 @@ class EvidocAPI:
             return None
         finally:
             self._current_test_name = None
+            self._current_test_full_name = None
             self._current_test_id = None
             self._steps = []
             self._artifacts = []
@@ -308,6 +320,28 @@ class EvidocAPI:
             self._warn(f"Unable to attach file '{path}': {exc}")
             return None
 
+    def reference_file(self, path: str | Path, description: str | None = None) -> str | None:
+        """Record an existing file for the upload manifest without copying it."""
+        if self._current_test_id is None:
+            self._warn(f"No active test context for file '{path}'.")
+            return None
+        source = Path(path).expanduser().resolve()
+        if not source.is_file():
+            self._warn(f"File to attach does not exist: {source}")
+            return None
+        artifact_id = uuid4().hex
+        self._artifacts.append(
+            Artifact(
+                id=artifact_id,
+                type=ArtifactType.FILE,
+                path=str(source),
+                title=source.name,
+                description=description,
+                external=True,
+            )
+        )
+        return artifact_id
+
     def _register_artifact(
         self,
         *,
@@ -432,8 +466,8 @@ def clear_context() -> None:
     _CURRENT_API.set(None)
 
 
-def start_test(test_name: str) -> str | None:
-    return get_current_api().start_test(test_name)
+def start_test(test_name: str, *, full_name: str | None = None) -> str | None:
+    return get_current_api().start_test(test_name, full_name=full_name)
 
 
 def end_test(status: str | Status, duration: float) -> str | None:
@@ -479,6 +513,10 @@ def attach_artifact(path: str | Path, description: str | None = None) -> str | N
     return attach_file(path, description)
 
 
+def reference_file(path: str | Path, description: str | None = None) -> str | None:
+    return get_current_api().reference_file(path, description)
+
+
 def capture_image(
     image: bytes,
     *,
@@ -504,6 +542,7 @@ def build(
     formats: tuple[str, ...] | list[str] | None = None,
     mode: str | None = None,
     config_path: str | Path | None = None,
+    exclude_status: str | list[str] | tuple[str, ...] | None = None,
 ) -> list[Path]:
     """Generate reports from persisted metadata in the current Python process."""
     settings = SchemaValidatedConfigRepository(config_schema_path()).load(
@@ -518,8 +557,14 @@ def build(
     destination = output_dir or settings.get("output_dir") or "output/evidoc/reports"
     selected_formats = formats or settings.get("formats") or [settings.get("format", "pdf")]
     selected_mode = mode or settings.get("mode") or "single"
+    excluded = exclude_status if exclude_status is not None else settings.get("exclude_status", [])
+    if isinstance(excluded, str):
+        excluded = excluded.split(",")
+    excluded_statuses = {Status(str(value).strip().upper()) for value in excluded}
     _, generate = build_generate_use_case()
-    return [
+    selected = generate.select(Path(source), excluded_statuses)
+    external_files(selected)
+    reports = [
         path
         for fmt in selected_formats
         for path in generate.execute(
@@ -528,6 +573,20 @@ def build(
                 output_dir=Path(destination),
                 format=ReportFormat(fmt.lower()),
                 mode=GenerateMode(selected_mode.lower()),
-            )
+            ),
+            selected,
         )
     ]
+    if Path(source).exists():
+        write_upload_manifest(
+            Path(destination), selected, reports, GenerateMode(selected_mode.lower())
+        )
+    return reports
+
+
+def merge(input_dirs: Sequence[str | Path], output_dir: str | Path) -> Path:
+    """Select the last complete attempt of each case without copying its images."""
+    repository = FilesystemResultRepository(bundled_result_schema_path())
+    return MergeResultsUseCase(repository).execute(
+        [Path(directory) for directory in input_dirs], Path(output_dir)
+    )

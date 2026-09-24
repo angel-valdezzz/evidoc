@@ -3,6 +3,8 @@
 ## CLI
 
 ```bash
+poetry run evidoc build --input-dir PATH --output-dir PATH --formats pdf,docx [--exclude-status FAIL,SKIP]
+poetry run evidoc merge --input-dir RUN --input-dir RERUN --output-dir FINAL
 poetry run evidoc generate [--source_dir PATH] [--output_dir PATH] [--mode run|single] [--format pdf|docx]
 poetry run evidoc tui
 poetry run evidoc docs manual
@@ -32,6 +34,7 @@ api.log_step("Paso", "PASS")
 api.log_info("Mensaje")
 api.capture_screenshot(driver, title="Pantalla")
 api.attach_file("./archivo.txt", "Descripcion")
+api.reference_file("./descarga.pdf", "Archivo para subir, sin copia")
 api.end_test("PASS", 3.2)
 ```
 
@@ -48,6 +51,8 @@ Registrar Evidencia Minima
     Log Warning    Riesgo detectado
     Log Error    Fallo observado
     Attach Artifact    ${CURDIR}${/}archivo.txt    Archivo de soporte
+    Attach File    ${RUTA_FINAL}    description=Carátula descargada
+    Capture Page Evidence    Vista del titular    INFO    description=Folio visible
     Capture Screenshot    driver=${driver}    title=Pantalla final
 ```
 

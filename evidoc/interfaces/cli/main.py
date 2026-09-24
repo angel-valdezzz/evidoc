@@ -4,7 +4,7 @@ from pathlib import Path
 
 import typer
 
-from evidoc import build
+from evidoc import build, merge
 from evidoc.documentation import available_documents, open_documentation
 from evidoc.domain.generate_mode import GenerateMode
 from evidoc.domain.report_format import ReportFormat
@@ -67,6 +67,9 @@ def build_command(
     formats: str | None = typer.Option(None, "--formats", help="Comma-separated: pdf,docx"),
     mode: GenerateMode | None = typer.Option(None, "--mode", case_sensitive=False),
     config: Path | None = typer.Option(None, "--config"),
+    exclude_status: str | None = typer.Option(
+        None, "--exclude-status", help="Comma-separated statuses, such as FAIL,SKIP"
+    ),
 ) -> None:
     for report in build(
         input_dir=input_dir,
@@ -74,8 +77,17 @@ def build_command(
         formats=[item.strip() for item in formats.split(",")] if formats else None,
         mode=mode.value if mode else None,
         config_path=config,
+        exclude_status=exclude_status,
     ):
         typer.echo(str(report))
+
+
+@app.command("merge")
+def merge_command(
+    input_dirs: list[Path] = typer.Option(..., "--input-dir", help="Repeat in attempt order"),
+    output_dir: Path = typer.Option(..., "--output-dir"),
+) -> None:
+    typer.echo(str(merge(input_dirs, output_dir)))
 
 
 @app.command()
