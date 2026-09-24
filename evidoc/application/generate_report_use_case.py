@@ -33,19 +33,15 @@ class GenerateReportUseCase:
         results = [item.result for item in located]
         if not results:
             return []
-        if config.mode.value == "single":
-            names = [safe_name(result.test_case.name).casefold() for result in results]
-            if len(names) != len(set(names)):
-                raise ValueError(
-                    "Case names must be unique within the metadata directory to generate "
-                    "reports without overwriting files. Use separate metadata directories "
-                    "for separate runs."
-                )
+        names = [safe_name(result.test_case.name).casefold() for result in results]
+        if len(names) != len(set(names)):
+            raise ValueError(
+                "Case names must be unique within the metadata directory to generate "
+                "reports without overwriting files. Use separate metadata directories "
+                "for separate executions."
+            )
         config.output_dir.mkdir(parents=True, exist_ok=True)
-        if config.mode.value == "single":
-            return [
-                renderer.render_single(item.source_dir, config.output_dir, item.result)
-                for item in located
-            ]
-        sources = {item.result.test_id: item.source_dir for item in located}
-        return [renderer.render_run(config.source_dir, config.output_dir, results, sources)]
+        return [
+            renderer.render_single(item.source_dir, config.output_dir, item.result)
+            for item in located
+        ]

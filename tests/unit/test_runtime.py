@@ -11,7 +11,7 @@ from evidoc.application.services import (
     InMemoryWarningSink,
     LoadConfigUseCase,
 )
-from evidoc.domain.enums import GenerateMode, ReportFormat, Status
+from evidoc.domain.enums import ReportFormat, Status
 from evidoc.infrastructure.config.repository import SchemaValidatedConfigRepository
 from evidoc.infrastructure.filesystem.repository import (
     FilesystemArtifactStorage,
@@ -84,14 +84,11 @@ def test_missing_artifact_produces_warning(tmp_path: Path) -> None:
 
 def test_config_precedence(tmp_path: Path) -> None:
     config_path = tmp_path / "evidoc.toml"
-    config_path.write_text(
-        'source_dir = "./custom-results"\nformat = "docx"\nmode = "single"\n', encoding="utf-8"
-    )
+    config_path.write_text('source_dir = "./custom-results"\nformat = "docx"\n', encoding="utf-8")
     repo = SchemaValidatedConfigRepository(config_schema_path())
     config = LoadConfigUseCase(repo).execute(config_path, overrides={"format": "pdf"})
     assert config.source_dir == Path("./custom-results")
     assert config.format == ReportFormat.PDF
-    assert config.mode == GenerateMode.SINGLE
 
 
 def test_generate_pdf_and_docx_reports(tmp_path: Path) -> None:
@@ -108,7 +105,6 @@ def test_generate_pdf_and_docx_reports(tmp_path: Path) -> None:
                 "source_dir": tmp_path / "results",
                 "output_dir": tmp_path / "reports-pdf",
                 "format": ReportFormat.PDF,
-                "mode": GenerateMode.RUN,
             },
         )()
     )
@@ -120,7 +116,6 @@ def test_generate_pdf_and_docx_reports(tmp_path: Path) -> None:
                 "source_dir": tmp_path / "results",
                 "output_dir": tmp_path / "reports-docx",
                 "format": ReportFormat.DOCX,
-                "mode": GenerateMode.SINGLE,
             },
         )()
     )

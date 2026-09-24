@@ -1,62 +1,30 @@
-# Reportes y salidas
+# Reportes y archivos de salida
 
-## Que entra
-
-El insumo real de Evidoc es un conjunto de resultados estructurados en disco.
-
-## Que sale
-
-Segun configuracion, obtendras:
-
-- `pdf` para distribucion fija,
-- `docx` para edicion posterior.
-- `upload-manifest.json` con las rutas absolutas de los archivos que se entregan por caso.
-
-## Modos de generacion
-
-=== "`mode=run`"
-
-    Genera un reporte consolidado por `run_id`.
-
-=== "`mode=single`"
-
-    Genera un reporte por caso. El archivo toma el nombre seguro del caso, sin `test_id`.
-
-## Ejemplo de salida consolidada
+`build` recibe una carpeta de metadatos y crea un PDF o DOCX por caso de prueba y formato solicitado. El nombre del documento se deriva del nombre del caso, sin identificador de ejecución ni del resultado. Los caracteres incompatibles con los nombres de archivo se sustituyen. Si dos casos generan el mismo nombre seguro en una misma carpeta, `build` se detiene para evitar sobrescribir documentos.
 
 ```text
-results/
-└── run-run_cli/
-    ├── test-case_1/
-    └── test-case_2/
-
-reports/
-└── run-run_cli.pdf
+output/evidoc/
+├── metadata/
+│   └── run-<run_id>/test-<test_id>/result.json
+└── reports/
+    ├── TC036.pdf
+    ├── TC036.docx
+    └── upload-manifest.json
 ```
 
-## Ejemplo de salida individual
+El manifiesto agrupa por caso los documentos y archivos descargados que registraste con `Attach File`:
 
-```text
-reports/
-├── User_can_sign_in.docx
-├── Checkout_happy_path.docx
-└── upload-manifest.json
+```json
+{
+  "tests": [
+    {
+      "name": "TC036",
+      "files": ["/ruta/absoluta/TC036.pdf", "/ruta/absoluta/caratula.pdf"]
+    }
+  ]
+}
 ```
 
-Si dos casos tienen el mismo nombre seguro dentro de la misma carpeta de metadata, la generacion se detiene para evitar que uno sobrescriba al otro. Guarda ejecuciones distintas en carpetas separadas.
+Las rutas son absolutas y deben seguir accesibles para la herramienta que las carga. EviDoc no copia ni incrusta los archivos externos en el PDF o Word. Las capturas se muestran como máximo de dos en dos por página, con su descripción debajo. El tamaño de cada imagen conserva sus proporciones.
 
-## Resultados fusionados
-
-`evidoc merge` crea `merged-results.json` en el directorio de metadata final. El índice apunta a los resultados de run y rerun, sin duplicar capturas. Al construir los reportes, `--exclude-status FAIL,SKIP` elimina esos casos de los PDF/DOCX y del manifiesto, pero permanecen en la metadata final.
-
-El manifiesto tiene una lista `tests`; cada caso tiene un `name` y un arreglo `files` con las rutas absolutas de sus reportes y archivos registrados mediante `Attach File`. Los archivos externos no se copian ni se incrustan en el documento.
-
-## Que hace un reporte util
-
-- Cada paso se entiende por su titulo.
-- Los logs agregan contexto, no ruido.
-- Los screenshots tienen `title` y `description`.
-- Los archivos adjuntos responden a una necesidad concreta.
-
-!!! note "Fuente de verdad"
-    El reporte es una representacion. La evidencia fuente sigue estando en los JSON y en los artefactos guardados en disco.
+`--exclude-status FAIL,SKIP` excluye esos casos de los documentos y del manifiesto; conserva los metadatos fuente. Si usas `merge`, su índice final apunta a los resultados originales y las capturas siguen en sus carpetas de ejecución.

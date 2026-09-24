@@ -12,7 +12,7 @@ Feature: Evidoc API execution capture
     And the test ends with status "PASS" and duration 1.5
     Then a result file is generated for the captured test
     And the stored result declares status "PASS"
-    And the stored result references one copied artifact
+    And the stored result references one external file
 
   Scenario: Tolerate missing attachments without breaking the test result
     Given a clean Evidoc results directory

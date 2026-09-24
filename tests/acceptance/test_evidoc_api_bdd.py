@@ -81,13 +81,12 @@ def then_result_status(context: dict, status: str) -> None:
     assert context["payload"]["test_case"]["status"] == status
 
 
-@then("the stored result references one copied artifact")
-def then_result_references_copied_artifact(context: dict) -> None:
+@then("the stored result references one external file")
+def then_result_references_external_file(context: dict) -> None:
     artifacts = context["payload"]["artifacts"]
     assert len(artifacts) == 1
-    assert artifacts[0]["path"].startswith("artifacts/")
-    artifact_path = Path(context["result_path"]).parent / Path(artifacts[0]["path"])
-    assert artifact_path.exists()
+    assert artifacts[0]["path"] == str(context["attachment_path"].resolve())
+    assert artifacts[0]["external"] is True
 
 
 @then("the warning log mentions a missing artifact")

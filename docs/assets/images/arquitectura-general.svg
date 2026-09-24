@@ -52,7 +52,7 @@
   <rect x="40" y="458" width="1200" height="110" rx="24" class="layer"/>
   <text x="86" y="494" class="layer-title">Domain</text>
   <rect x="225" y="507" width="830" height="38" class="box"/>
-  <text x="640" y="532" class="box-text">Run, TestCase, Step, Artifact, Status, ReportFormat, GenerateMode y value objects</text>
+  <text x="640" y="532" class="box-text">Run, TestCase, Step, Artifact, Status, ReportFormat y tipos de valor</text>
 
   <rect x="40" y="604" width="1200" height="150" rx="24" class="layer"/>
   <text x="86" y="640" class="layer-title">Infrastructure</text>

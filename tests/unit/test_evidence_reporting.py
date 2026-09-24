@@ -47,7 +47,7 @@ def test_storage_and_both_renderers(tmp_path: Path, storage: str) -> None:
     result = results[0]
     assert all(bool(a.data) == (storage == "base64") for a in result.artifacts)
     assert len(list(source.rglob("*.png"))) == (0 if storage == "base64" else 3)
-    outputs = build(source, tmp_path / "reports", ["pdf", "docx"], mode="single")
+    outputs = build(source, tmp_path / "reports", ["pdf", "docx"])
     assert {output.name for output in outputs} == {"Inicio_de_sesi_n.pdf", "Inicio_de_sesi_n.docx"}
     assert {output.suffix for output in outputs} == {".pdf", ".docx"}
     assert all(output.stat().st_size > 1000 for output in outputs)
@@ -111,8 +111,101 @@ def test_same_case_name_cannot_overwrite_a_report(tmp_path: Path) -> None:
         api.start_test("Same case")
         api.end_test("PASS", 0.1)
     with pytest.raises(ValueError, match="Case names must be unique"):
-        build(source, tmp_path / "reports", ["pdf"], mode="single")
+        build(source, tmp_path / "reports", ["pdf"])
     assert not (tmp_path / "reports").exists()
+
+
+def test_defects_apply_only_to_named_cases_during_build(tmp_path: Path) -> None:
+    source = tmp_path / "metadata"
+    api = EvidocAPI(root_dir=source)
+    for name in ("TC-01", "TC-02"):
+        api.start_test(name, full_name=f"Suite.{name}")
+        api.end_test("PASS", 0.1)
+    with pytest.raises(ValueError, match="exactly one selected test"):
+        build(source, tmp_path / "rejected", defects=["BUG-100"])
+    assert not (tmp_path / "rejected").exists()
+    invalid_cli = CliRunner().invoke(
+        app, ["build", "--input-dir", str(source), "--defect", "BUG-100"]
+    )
+    assert invalid_cli.exit_code != 0
+    assert "exactly one selected test" in invalid_cli.output
+    outputs = build(
+        source,
+        tmp_path / "reports",
+        formats=["docx"],
+        defects=["TC-01=BUG-100", "Suite.TC-01=BUG-101"],
+    )
+    defect_rows = {
+        path.stem: Document(str(path)).tables[0].rows[-1].cells[1].text for path in outputs
+    }
+    assert defect_rows == {"TC-01": "BUG-100, BUG-101", "TC-02": ""}
+    assert all(
+        result.test_case.defect is None
+        for result in FilesystemResultRepository(result_schema_path()).load_test_results(source)
+    )
+
+
+def test_single_selected_case_accepts_unqualified_defects(tmp_path: Path) -> None:
+    source = tmp_path / "metadata"
+    api = EvidocAPI(root_dir=source)
+    api.start_test("Passing case")
+    api.end_test("PASS", 0.1)
+    api.start_test("Failing case")
+    api.end_test("FAIL", 0.1)
+    outputs = build(
+        source,
+        tmp_path / "reports",
+        formats=["docx"],
+        exclude_status="FAIL",
+        defects=["BUG-200", "BUG-201"],
+    )
+    assert len(outputs) == 1
+    assert Document(str(outputs[0])).tables[0].rows[-1].cells[1].text == "BUG-200, BUG-201"
+
+
+def test_defect_rejects_unknown_and_ambiguous_names(tmp_path: Path) -> None:
+    source = tmp_path / "metadata"
+    api = EvidocAPI(root_dir=source)
+    for suite in ("A", "B"):
+        api.start_test("Same name", full_name=f"{suite}.Same name")
+        api.end_test("PASS", 0.1)
+    for defect, expected in (("Unknown=BUG-1", "matched 0"), ("Same name=BUG-1", "matched 2")):
+        with pytest.raises(ValueError, match=expected):
+            build(source, tmp_path / "reports", defects=[defect])
+    assert not (tmp_path / "reports").exists()
+
+
+def test_cli_repeated_defect_options_are_scoped_to_case(tmp_path: Path) -> None:
+    source = tmp_path / "metadata"
+    api = EvidocAPI(root_dir=source)
+    for name in ("TC036", "TC037"):
+        api.start_test(name)
+        api.end_test("PASS", 0.1)
+    result = CliRunner().invoke(
+        app,
+        [
+            "build",
+            "--input-dir",
+            str(source),
+            "--output-dir",
+            str(tmp_path / "reports"),
+            "--formats",
+            "docx",
+            "--defect",
+            "TC036=BUG-123",
+            "--defect",
+            "TC037=BUG-456",
+        ],
+    )
+    assert result.exit_code == 0, result.stdout
+    assert (
+        Document(str(tmp_path / "reports" / "TC036.docx")).tables[0].rows[-1].cells[1].text
+        == "BUG-123"
+    )
+    assert (
+        Document(str(tmp_path / "reports" / "TC037.docx")).tables[0].rows[-1].cells[1].text
+        == "BUG-456"
+    )
 
 
 def test_cli_and_python_build_match(tmp_path: Path) -> None:
@@ -174,7 +267,6 @@ def test_merge_selects_last_complete_attempt_and_filters_afterward(tmp_path: Pat
         index.parent,
         tmp_path / "final" / "reports",
         ["pdf", "docx"],
-        mode="single",
         exclude_status=["FAIL", "SKIP"],
     )
     assert {path.name for path in outputs} == {"TC-01.pdf", "TC-01.docx", "TC-02.pdf", "TC-02.docx"}
@@ -209,18 +301,18 @@ def test_attach_file_uses_original_path_without_copy(tmp_path: Path) -> None:
     source.write_bytes(b"example")
     api = EvidocAPI(root_dir=metadata, storage="base64")
     api.start_test("Policy")
-    assert api.reference_file(source, "Carátula")
+    assert api.attach_file(source, "Carátula")
     api.end_test("PASS", 1)
     assert not list(metadata.rglob("*.pdf"))
     assert not list(metadata.rglob("*.png"))
-    reports = build(metadata, tmp_path / "reports", ["pdf"], mode="single")
+    reports = build(metadata, tmp_path / "reports", ["pdf"])
     manifest = json.loads((tmp_path / "reports" / "upload-manifest.json").read_text())
     assert manifest["tests"] == [
         {"name": "Policy", "files": [str(reports[0].resolve()), str(source.resolve())]}
     ]
     source.unlink()
     with pytest.raises(FileNotFoundError, match="Attached file is missing"):
-        build(metadata, tmp_path / "again", ["pdf"], mode="single")
+        build(metadata, tmp_path / "again", ["pdf"])
     assert not (tmp_path / "again").exists()
 
 
@@ -242,8 +334,6 @@ def test_cli_merge_and_single_status_exclusion(tmp_path: Path) -> None:
             str(tmp_path / "merged"),
             "--output-dir",
             str(tmp_path / "reports"),
-            "--mode",
-            "single",
             "--exclude-status",
             "SKIP",
         ],
@@ -254,8 +344,7 @@ def test_cli_merge_and_single_status_exclusion(tmp_path: Path) -> None:
         "upload-manifest.json",
     }
     assert {
-        path.name
-        for path in build(source, tmp_path / "plain", ["pdf"], mode="single", exclude_status="SKIP")
+        path.name for path in build(source, tmp_path / "plain", ["pdf"], exclude_status="SKIP")
     } == {"Passed.pdf"}
 
 
@@ -358,7 +447,7 @@ def test_no_more_than_two_images_per_page_and_descriptions_follow_images(
     for number in range(5):
         api.capture_image(png(), title=f"Image {number}", description=f"Note {number}")
     api.end_test("PASS", 1)
-    reports = build(metadata, tmp_path / "reports", ["pdf", "docx"], mode="single")
+    reports = build(metadata, tmp_path / "reports", ["pdf", "docx"])
     from pypdf import PdfReader
 
     pdf = PdfReader(next(report for report in reports if report.suffix == ".pdf"))
@@ -394,7 +483,7 @@ def test_toml_config_applies_to_listener_and_build(
     suite = tmp_path / "test.robot"
     suite.write_text(
         "*** Settings ***\nLibrary    evidoc.robot\n*** Test Cases ***\nCaso real\n"
-        "    Set Defect    BUG-17\n    Capture Desktop Evidence    Evidencia\n",
+        "    Capture Desktop Evidence    Evidencia\n",
         encoding="utf-8",
     )
     assert (
@@ -413,7 +502,7 @@ def test_toml_config_applies_to_listener_and_build(
     assert len(results) == 1
     assert results[0].test_case.application == "Salud"
     assert results[0].test_case.project == "Espartaco"
-    assert results[0].test_case.defect == "BUG-17"
+    assert results[0].test_case.defect is None
     assert results[0].artifacts[0].data
     outputs = build()
     assert {output.suffix for output in outputs} == {".pdf", ".docx"}

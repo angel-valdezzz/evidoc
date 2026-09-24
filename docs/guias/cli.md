@@ -1,42 +1,40 @@
-# Comandos de EviDoc
+# Comandos de consola
 
-Ejecuta estos comandos desde el mismo entorno Poetry donde instalaste EviDoc y Robot Framework. El [Quick Start](../primeros-pasos/evidencia-robot.md) muestra cómo configurar las keywords y el listener.
+Ejecuta `poetry run evidoc --help` en el entorno Poetry donde instalaste EviDoc.
 
-## `build`: reportes y manifiesto
+## `build`: documentos y manifiesto
 
 ```bash
 poetry run evidoc build --input-dir output/evidoc/metadata --output-dir output/evidoc/reports --formats pdf,docx
 ```
 
-`--input-dir` apunta a la metadata del listener o al directorio creado por `merge`. `--output-dir` recibe los reportes y `upload-manifest.json`. `--formats` acepta `pdf`, `docx` o ambos. Sin filtro, se incluyen todos los casos.
+| Opción | Uso |
+| --- | --- |
+| `--input-dir PATH` | Directorio de resultados (`result.json`) o índice de `merge`. |
+| `--output-dir PATH` | Directorio de documentos y `upload-manifest.json`. |
+| `--formats pdf,docx` | Formatos; acepta uno o ambos. |
+| `--exclude-status FAIL,SKIP` | Excluye los estados indicados de documentos y manifiesto. |
+| `--defect BUG-123` | Asigna un defecto cuando se selecciona exactamente un caso. Se puede repetir. |
+| `--defect 'Nombre del caso=BUG-123'` | Asigna el defecto a ese caso. Obligatorio si se seleccionan varios casos. Se puede repetir. |
+| `--config PATH` | Usa un archivo `evidoc.toml` o `evidoc.json` específico. |
 
-Para no generar reportes de casos fallidos u omitidos:
+`--defect` acepta el nombre `${TEST NAME}` de Robot o un nombre completo único. Si el nombre no corresponde a un caso seleccionado o coincide con más de uno, `build` se detiene. Las asignaciones aparecen en los reportes generados; no modifican `result.json`. Si no indicas opciones, EviDoc usa la configuración local o sus rutas predeterminadas.
 
-```bash
-poetry run evidoc build --input-dir output/final/metadata --output-dir output/final/reports --formats pdf,docx --exclude-status FAIL,SKIP
-```
-
-`--exclude-status` acepta un estado o varios separados por coma. El filtro se aplica a los resultados finales **antes** de generar PDF, DOCX y manifiesto. El modo predeterminado es `single` (un reporte por caso); `--mode run` crea uno combinado por formato. Un valor de `mode` en `evidoc.toml` tiene prioridad sobre este predeterminado.
-
-## `merge`: último resultado por caso
-
-```bash
-poetry run evidoc merge --input-dir output/run/metadata --input-dir output/rerun/metadata --output-dir output/final/metadata
-```
-
-Repite `--input-dir` en orden cronológico. Cuando un caso aparece en ambas entradas, gana el intento completo de la última. `merge` guarda `merged-results.json`, un índice pequeño de los resultados originales; no mueve ni copia capturas. Mantén disponibles las carpetas de entrada hasta terminar `build`. No es necesario ejecutar `merge` si solo hay una tanda de pruebas.
-
-## Configuración y compatibilidad
-
-Si existe `evidoc.toml` o `evidoc.json` en el directorio actual, `build` lee las rutas, formatos, modo y estados excluidos de allí. Los argumentos explícitos prevalecen. El comando anterior `evidoc generate` sigue disponible para los flujos que ya lo utilizan:
+## `merge`: resultados de varias ejecuciones (opcional)
 
 ```bash
-poetry run evidoc generate --source-dir ./results --output-dir ./reports --mode run --format pdf
+poetry run evidoc merge --input-dir output/primera/metadata --input-dir output/segunda/metadata --output-dir output/final/metadata
+poetry run evidoc build --input-dir output/final/metadata --output-dir output/final/reports
 ```
 
-Para abrir la documentación instalada sin servidor:
+Repite `--input-dir` en orden cronológico. Si un caso aparece varias veces, se selecciona el último resultado completo. `merge` escribe `merged-results.json` con referencias a la evidencia original. Conserva las carpetas de origen hasta terminar de generar y utilizar los reportes. Si hay una sola ejecución, llama a `build` sobre su carpeta de metadata.
+
+## Documentación e interfaz
 
 ```bash
 poetry run evidoc docs manual
-poetry run evidoc docs robot-library
+poetry run evidoc docs library
+poetry run evidoc tui
 ```
+
+`manual` abre el manual offline; `library` abre la referencia de keywords de Robot Framework. `tui` muestra la interfaz interactiva.

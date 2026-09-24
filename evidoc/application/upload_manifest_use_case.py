@@ -8,7 +8,6 @@ from pathlib import Path
 from evidoc.application.located_result import LocatedResult
 from evidoc.application.report_filename import safe_name
 from evidoc.domain.artifact_type import ArtifactType
-from evidoc.domain.generate_mode import GenerateMode
 
 
 def external_files(results: list[LocatedResult]) -> None:
@@ -29,18 +28,12 @@ def write_upload_manifest(
     output_dir: Path,
     results: list[LocatedResult],
     reports: list[Path],
-    mode: GenerateMode,
 ) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
-    report_paths = {path.resolve() for path in reports}
     cases: list[dict[str, object]] = []
     for item in results:
-        if mode == GenerateMode.SINGLE:
-            stem = safe_name(item.result.test_case.name)
-            files = [path for path in reports if path.stem == stem]
-        else:
-            files = reports
-        files = [path.resolve() for path in files if path.resolve() in report_paths]
+        stem = safe_name(item.result.test_case.name)
+        files = [path.resolve() for path in reports if path.stem == stem]
         files += [
             Path(artifact.path).resolve()
             for artifact in item.result.artifacts

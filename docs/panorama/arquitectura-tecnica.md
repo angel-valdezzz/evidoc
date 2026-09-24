@@ -24,7 +24,7 @@ El proyecto sigue una separacion clara entre interfaces, capa de aplicacion, dom
 
 ## Diagrama de flujo principal
 
-El flujo principal conserva la misma narrativa explicada en el modelo operativo: una interfaz inicia el proceso, Evidoc abre contexto, registra evidencia, persiste resultados estructurados y despues genera salidas PDF o DOCX segun el modo seleccionado.
+El flujo principal conserva la misma narrativa explicada en el modelo operativo: una interfaz inicia el proceso, Evidoc abre contexto, registra evidencia, persiste resultados estructurados y despues genera salidas PDF o DOCX para cada caso de prueba.
 
 [Fuente PlantUML](../uml/flujo-operativo.puml)
 

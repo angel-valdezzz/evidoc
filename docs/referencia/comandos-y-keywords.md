@@ -1,42 +1,17 @@
 # Comandos y keywords
 
-## CLI
+## Consola
 
 ```bash
-poetry run evidoc build --input-dir PATH --output-dir PATH --formats pdf,docx [--exclude-status FAIL,SKIP]
-poetry run evidoc merge --input-dir RUN --input-dir RERUN --output-dir FINAL
-poetry run evidoc generate [--source_dir PATH] [--output_dir PATH] [--mode run|single] [--format pdf|docx]
-poetry run evidoc tui
+poetry run evidoc build --input-dir PATH --output-dir PATH --formats pdf,docx
+poetry run evidoc build --input-dir PATH --exclude-status FAIL,SKIP --defect 'TC036=BUG-123'
+poetry run evidoc merge --input-dir PATH_A --input-dir PATH_B --output-dir PATH_FINAL
 poetry run evidoc docs manual
-poetry run evidoc docs robot-library
-poetry run ruff check .
-poetry run ruff format .
-poetry run mypy evidoc tests scripts
-poetry run lint-imports
+poetry run evidoc docs library
+poetry run evidoc tui
 ```
 
-`evidoc docs manual` abre el manual offline generado con MkDocs y empaquetado dentro del `wheel` instalado localmente.
-
-`evidoc docs robot-library` abre la referencia HTML de la libreria `evidoc.robot` generada con `libdoc` y empaquetada dentro de la distribucion instalada.
-
-### Corrida completa de calidad
-
-```bash
-poetry run ruff check . && poetry run mypy evidoc tests scripts && poetry run lint-imports && poetry run pytest tests/unit -m unit && poetry run pytest tests/acceptance -m acceptance
-```
-
-## Python API
-
-```python
-api.configure_context(root_dir="./results")
-api.start_test("Nombre de prueba")
-api.log_step("Paso", "PASS")
-api.log_info("Mensaje")
-api.capture_screenshot(driver, title="Pantalla")
-api.attach_file("./archivo.txt", "Descripcion")
-api.reference_file("./descarga.pdf", "Archivo para subir, sin copia")
-api.end_test("PASS", 3.2)
-```
+Consulta la [guía de comandos](../guias/cli.md) para todas las opciones, ejemplos y reglas de asignación de defectos. `build` funciona sin `merge` con una sola ejecución.
 
 ## Robot Framework
 
@@ -45,15 +20,25 @@ api.end_test("PASS", 3.2)
 Library    evidoc.robot
 
 *** Test Cases ***
-Registrar Evidencia Minima
-    Log Step    Paso visible    PASS
-    Log Info    Mensaje tecnico
-    Log Warning    Riesgo detectado
-    Log Error    Fallo observado
-    Attach Artifact    ${CURDIR}${/}archivo.txt    Archivo de soporte
-    Attach File    ${RUTA_FINAL}    description=Carátula descargada
-    Capture Page Evidence    Vista del titular    INFO    description=Folio visible
-    Capture Screenshot    driver=${driver}    title=Pantalla final
+Validar solicitud
+    Capture Page Evidence    Solicitud abierta    INFO    description=Formulario visible
+    Log Step    Validar resultado    PASS
+    Attach File    ${OUTPUT DIR}${/}solicitud.pdf    description=Documento generado
 ```
 
-La referencia completa de argumentos, descripcion funcional y notas de uso para cada keyword se consulta desde el HTML abierto con `evidoc docs robot-library`.
+Las keywords disponibles y sus argumentos están en la [guía de Robot Framework](../guias/robot-framework.md). `poetry run evidoc docs library` abre la referencia completa incluida en el paquete.
+
+## Python
+
+```python
+from evidoc import build, merge
+from evidoc.api import EvidocAPI
+
+api = EvidocAPI(root_dir="output/evidoc/metadata")
+api.start_test("TC036")
+api.attach_file("output/descargas/solicitud.pdf", "Solicitud")
+api.end_test("PASS", 5.0)
+reports = build(input_dir="output/evidoc/metadata", defects=["BUG-123"])
+```
+
+[Guía de la API](../guias/python-api.md) · [Archivos de salida](../guias/reportes-y-salidas.md)

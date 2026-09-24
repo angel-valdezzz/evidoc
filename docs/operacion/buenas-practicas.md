@@ -1,6 +1,6 @@
 # Buenas practicas
 
-## Para que el reporte enganche y no sea ruido
+## Para que el reporte sea claro y útil
 
 - Cuenta una historia por pasos.
 - Adjunta solo evidencia que sirva para defender una conclusion.
@@ -32,7 +32,7 @@
 - Ejecuta `ruff` como linter y formatter de referencia.
 - Ejecuta `mypy` antes de fusionar cambios que toquen contratos, renderers o integraciones.
 - Ejecuta `import-linter` cuando cambie la relacion entre `domain`, `application`, `infrastructure` o `interfaces`.
-- Usa la corrida completa de calidad antes de publicar cambios importantes.
+- Usa todas las comprobaciones de calidad antes de publicar cambios importantes.
 
 ```bash
 poetry run ruff check . && poetry run mypy evidoc tests scripts && poetry run lint-imports && poetry run pytest tests/unit -m unit && poetry run pytest tests/acceptance -m acceptance

@@ -16,11 +16,11 @@ Evidoc no intenta reemplazar tu framework de pruebas. Su responsabilidad es otra
 ## Lo que Evidoc no hace
 
 !!! warning "Limites actuales"
-    Evidoc no ejecuta pruebas por si mismo, no agenda corridas, no versiona evidencia y no modela suites complejas como entidad de primer nivel. Su centro es la **prueba individual** y la **corrida** en la que esa prueba vive.
+    Evidoc no ejecuta pruebas por si mismo, no agenda ejecuciones, no versiona evidencia y no modela suites complejas como entidad de primer nivel. Su centro es la **prueba individual** y la **ejecución** en la que esa prueba vive.
 
 ## Resultado mental correcto
 
-Piensa en Evidoc como una tuberia de dos etapas:
+Piensa en Evidoc como una proceso de dos etapas:
 
 1. **Captura**: una prueba produce un resultado JSON y una carpeta de artefactos.
 2. **Presentacion**: el motor toma esos resultados y genera reportes PDF o DOCX.

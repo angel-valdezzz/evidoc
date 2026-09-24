@@ -2,7 +2,6 @@
 
 from evidoc.api import (
     EvidocAPI,
-    attach_artifact,
     attach_file,
     build,
     capture_image,
@@ -16,15 +15,12 @@ from evidoc.api import (
     log_step,
     log_warning,
     merge,
-    reference_file,
-    set_defect,
     start_test,
 )
 
 __all__ = [
     "EvidocAPI",
     "__version__",
-    "attach_artifact",
     "attach_file",
     "build",
     "capture_image",
@@ -38,8 +34,6 @@ __all__ = [
     "log_step",
     "log_warning",
     "merge",
-    "reference_file",
-    "set_defect",
     "start_test",
 ]
 

@@ -50,25 +50,11 @@ class PdfReportRenderer(ReportRenderer):
         self._build(output, source_dir, [result])
         return output
 
-    def render_run(
-        self,
-        source_dir: Path,
-        output_dir: Path,
-        results: list[Run],
-        sources: dict[str, Path] | None = None,
-    ) -> Path:
-        run_ids = {result.run_id for result in results}
-        run_id = results[0].run_id if len(run_ids) == 1 else "combined"
-        output = output_dir / f"run-{run_id}.pdf"
-        self._build(output, source_dir, results, sources)
-        return output
-
     def _build(
         self,
         output: Path,
         source_dir: Path,
         results: list[Run],
-        sources: dict[str, Path] | None = None,
     ) -> None:
         styles = getSampleStyleSheet()
         styles["Title"].textColor = NAVY
@@ -144,9 +130,7 @@ class PdfReportRenderer(ReportRenderer):
                     block: list = [heading]
                     if artifact.title and artifact.title != step.title:
                         block.append(Paragraph(escape(artifact.title), styles["BodyText"]))
-                    data = image_bytes(
-                        (sources or {}).get(result.test_id, source_dir), result, artifact
-                    )
+                    data = image_bytes(source_dir, result, artifact)
                     if data:
                         reader = ImageReader(BytesIO(data))
                         width, height = reader.getSize()

@@ -1,40 +1,14 @@
 # Recorrido guiado
 
-## Una sola ejecución
-
-Configura `evidoc.toml` en el directorio donde ejecutarás los comandos:
-
-```toml
-metadata_dir = "output/run/robot/evidoc/metadata"
-output_dir = "output/run/robot/evidoc/reports"
-formats = ["pdf", "docx"]
-mode = "single"
-```
-
-Ejecuta Robot con el listener e importa la librería de keywords en tu suite:
+1. [Instala EviDoc](instalacion.md) en el entorno Poetry de tus pruebas.
+2. [Registra evidencia con Robot](evidencia-robot.md) y ejecuta las pruebas con el listener.
+3. Genera los documentos a partir de la carpeta de metadatos:
 
 ```bash
-poetry run robot --outputdir output/run/robot --listener evidoc.listener tests/
-poetry run evidoc build
+poetry run robot --outputdir output --listener evidoc.listener tests/
+poetry run evidoc build --input-dir output/evidoc/metadata --output-dir output/evidoc/reports --formats pdf,docx
 ```
 
-Cada caso genera un PDF y un DOCX con su nombre. `upload-manifest.json` agrupa sus rutas por caso. Si registraste descargas con `Attach File`, también aparecen en `files`.
+El segundo comando produce un documento por caso y `upload-manifest.json` con las rutas absolutas de los archivos a cargar. Si descubres un defecto después de la ejecución, repite `build` con `--defect 'Nombre del caso=BUG-123'`. Puedes excluir casos con `--exclude-status FAIL,SKIP`.
 
-## Run y rerun
-
-Guarda cada ejecución en carpetas separadas y luego une sus resultados:
-
-```bash
-poetry run evidoc merge \
-  --input-dir output/run/robot/evidoc/metadata \
-  --input-dir output/rerun/robot/evidoc/metadata \
-  --output-dir output/final/metadata
-poetry run evidoc build \
-  --input-dir output/final/metadata \
-  --output-dir output/final/reports \
-  --exclude-status FAIL,SKIP
-```
-
-El resultado del rerun reemplaza al del run para cada prueba repetida. Los casos sin rerun conservan su resultado original. El filtro solo afecta los reportes y el manifiesto; el índice fusionado conserva todos los resultados. No necesitas ejecutar `merge` si hiciste una sola corrida.
-
-Para configurar capturas, descripciones y archivos externos, sigue el [Quick Start](evidencia-robot.md).
+Cuando necesites combinar los resultados de varias ejecuciones, consulta [`merge`](../guias/cli.md#merge-resultados-de-varias-ejecuciones-opcional). Ese comando es opcional; no hace falta para generar reportes de una sola ejecución.

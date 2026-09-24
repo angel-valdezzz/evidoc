@@ -52,7 +52,6 @@ class Listener:
         self.project = project or settings.get("project")
         self.environment = environment or settings.get("environment")
         self.brand = brand or settings.get("brand")
-        self.defect = settings.get("defect")
         self._test_started_at: ContextVar[float | None] = ContextVar(
             "EVIDOC_LISTENER_TEST_STARTED_AT",
             default=None,
@@ -85,8 +84,6 @@ class Listener:
                 api.start_test(name)
             else:
                 api.start_test(name, full_name=full_name)
-            if self.defect:
-                api.set_defect(self.defect)
             self._test_started_at.set(perf_counter())
         except Exception as exc:  # pragma: no cover
             LOGGER.warning("Unable to start Evidoc test context: %s", exc)

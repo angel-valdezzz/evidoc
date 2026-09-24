@@ -8,7 +8,7 @@ from typing import Any, cast
 import pytest
 from evidoc.api import (
     EvidocAPI,
-    attach_artifact,
+    attach_file,
     clear_context,
     configure_context,
     end_test,
@@ -60,8 +60,9 @@ def test_api_creates_run_test_and_artifact_structure(tmp_path: Path) -> None:
     payload = load_result(root_dir, first_test_id)
 
     validate(payload, load_schema())
-    assert payload["steps"][0]["artifact_ids"] == [artifact_id]
-    assert payload["artifacts"][0]["path"].startswith("artifacts/")
+    assert payload["steps"][0]["artifact_ids"] == []
+    assert payload["artifacts"][0]["path"] == str(attachment.resolve())
+    assert payload["artifacts"][0]["external"] is True
     assert (root_dir / f"run-{payload['run_id']}" / f"test-{first_test_id}" / "artifacts").exists()
 
 
@@ -186,7 +187,7 @@ def test_module_level_api_isolated_per_thread(tmp_path: Path) -> None:
             artifact = root_dir / f"{name}.txt"
             artifact.parent.mkdir(parents=True, exist_ok=True)
             artifact.write_text(name, encoding="utf-8")
-            attach_artifact(artifact, f"artifact-{name}")
+            attach_file(artifact, f"artifact-{name}")
             result_path = end_test("PASS", 0.1)
             with lock:
                 results.append((name, str(result_path), id(get_current_api())))

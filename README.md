@@ -1,114 +1,92 @@
 # EviDoc
 
-EviDoc registra evidencias de pruebas automatizadas y crea un PDF o DOCX por caso. Funciona con Robot Framework, Pabot o un pipeline Python. Las capturas y los resultados se guardan durante la ejecución; los reportes se construyen después.
+EviDoc registra evidencias de casos de prueba y genera un PDF o DOCX **por caso**. Funciona con Robot Framework y con scripts Python. Las capturas se guardan durante la ejecución; `build` crea los documentos y `upload-manifest.json` después.
 
-## Instalación en tu proyecto de pruebas
+## Instalación
+
+En el proyecto de pruebas, coloca el archivo wheel de EviDoc en `assets/` e instálalo en el entorno Poetry (ajusta la versión al nombre recibido):
 
 ```bash
-poetry add "git+https://github.com/angel-valdezzz/evidoc.git#feature/legacy-evidence-reporting"
-poetry add robotframework-seleniumlibrary
-poetry run python -c "import evidoc.robot, evidoc.listener; print(evidoc.robot.__file__)"
+poetry add ./assets/evidoc-0.1.0-py3-none-any.whl
+poetry run evidoc --help
 ```
 
-Usa siempre `poetry run robot` y `poetry run evidoc` desde el mismo proyecto para que compartan el entorno. SeleniumLibrary solo es necesaria para capturas de página o elemento; `Capture Desktop Evidence` no depende del navegador.
+Para capturas del navegador, instala también `robotframework-seleniumlibrary` en ese entorno. El listener y la biblioteca deben ejecutarse con el mismo Poetry.
 
-## Primer reporte con Robot
-
-En `resources/evidencia.resource`:
+## Primer reporte con Robot Framework
 
 ```robotframework
 *** Settings ***
 Library    SeleniumLibrary
 Library    evidoc.robot
 
-*** Keywords ***
+*** Test Cases ***
 Registrar solicitud
+    Open Browser    https://example.test    chrome
     Capture Page Evidence    Solicitud registrada    INFO    description=Se muestra el folio asignado
-    Capture Element Evidence    css:#PanelTitular    Panel titular    INFO    description=Datos del titular
+    Attach File    ${OUTPUT DIR}${/}caratula.pdf    description=Carátula descargada
+    Close Browser
 ```
 
-En la suite importa `Resource    ../resources/evidencia.resource`, abre el navegador y llama `Registrar solicitud`. Activa el listener **en el comando**, no en el recurso:
+`Attach File` se usa cuando el archivo ya existe; apunta a su ruta original y lo agrega al manifiesto. No lo copia ni lo incrusta en los documentos.
 
 ```bash
 poetry run robot --outputdir output --listener evidoc.listener tests/
 poetry run evidoc build --input-dir output/evidoc/metadata --output-dir output/evidoc/reports --formats pdf,docx
 ```
 
-Los reportes y `upload-manifest.json` quedan en `output/evidoc/reports`. El manifiesto agrupa las rutas absolutas por caso para una herramienta externa de carga. Sin `--exclude-status`, `build` incluye todos los estados.
+La segunda orden produce `Nombre_del_caso.pdf`, `Nombre_del_caso.docx` y `upload-manifest.json`. Si solo necesitas PDF, usa `--formats pdf`. El manifiesto contiene una lista `tests`; cada entrada tiene `name` y `files` con rutas absolutas a documentos y archivos registrados. Con una sola ejecución basta `build`.
 
-## Archivos descargados
+## Defectos y selección de casos
 
-Registra la **ruta final** una vez que el archivo esté descargado y renombrado:
-
-```robotframework
-Attach File    ${RUTA_CARATULA}    description=Carátula de la póliza
-```
-
-`Attach File` no copia el archivo ni lo introduce en PDF/DOCX. EviDoc verifica que siga existiendo al construir el manifiesto. `Attach Artifact` conserva su comportamiento anterior de copiar un archivo a metadata; úsalo solo si necesitas esa copia.
-
-## Run y rerun
-
-Si reejecutas los casos fallidos, conserva las dos carpetas de metadata y fusiona los resultados antes de construir los reportes:
+Asigna el defecto al construir los documentos, una vez que tengas su clave en Jira:
 
 ```bash
-poetry run evidoc merge --input-dir output/run/evidoc/metadata --input-dir output/rerun/evidoc/metadata --output-dir output/final/evidoc/metadata
-poetry run evidoc build --input-dir output/final/evidoc/metadata --output-dir output/final/evidoc/reports --formats pdf,docx --exclude-status FAIL,SKIP
+# Solo cuando build selecciona un caso:
+poetry run evidoc build --input-dir output/evidoc/metadata --defect BUG-123
+
+# Si build selecciona varios casos, especifica el nombre del caso:
+poetry run evidoc build --input-dir output/evidoc/metadata --defect 'TC036=BUG-123' --defect 'TC037=BUG-456'
 ```
 
-`merge` toma el último intento completo de cada caso. No copia capturas: la metadata final apunta a las carpetas originales, que deben permanecer disponibles. `build` filtra **después** de fusionar. Si ejecutas Robot una sola vez, omite `merge` y usa `build` directamente sobre su metadata.
+Repite `--defect 'TC036=BUG-789'` para asignar dos claves a un mismo caso. El nombre debe coincidir con `${TEST NAME}` de Robot, o con el nombre completo único de la prueba. Un defecto sin nombre se rechaza cuando hay más de un caso seleccionado. `--exclude-status FAIL,SKIP` retira esos casos de los reportes y del manifiesto antes de asignar defectos. Los metadatos originales no cambian.
 
-Con Pabot, pasa a todos los workers el mismo directorio de metadata:
+Si tienes resultados de más de una ejecución y deseas conservar el último resultado por caso, usa `merge` antes de `build`:
 
 ```bash
-poetry run pabot --outputdir output/run/robot --listener evidoc.listener.Listener:output/run/evidoc/metadata:file tests/
+poetry run evidoc merge --input-dir output/primera/metadata --input-dir output/segunda/metadata --output-dir output/final/metadata
+poetry run evidoc build --input-dir output/final/metadata --output-dir output/final/reports --exclude-status FAIL,SKIP
 ```
 
-## Pipeline Python
+`merge` es opcional y acepta carpetas de entrada en orden cronológico. Su índice mantiene referencias a los archivos originales: conserva esas carpetas hasta finalizar la generación y la carga.
+
+## API Python y configuración
 
 ```python
-from robot import run
 from evidoc import build, merge
 
-run("tests", outputdir="output/run/robot", listener="evidoc.listener")
-# Si hubo rerun, usa primero merge([metadata_run, metadata_rerun], metadata_final).
 reports = build(
-    input_dir="output/run/robot/evidoc/metadata",
-    output_dir="output/run/reports",
+    input_dir="output/evidoc/metadata",
+    output_dir="output/evidoc/reports",
     formats=["pdf", "docx"],
-    exclude_status=["FAIL", "SKIP"],
+    defects=["TC036=BUG-123"],
 )
 ```
 
-`build()` devuelve una lista de rutas `Path` a los reportes. Tanto CLI como API usan el mismo caso de uso. `exclude_status` admite un estado (`"FAIL"`) o una lista. `evidoc generate` sigue disponible para los flujos anteriores.
-
-## Configuración opcional
-
-EviDoc lee `evidoc.toml` (o `evidoc.json`) desde el directorio donde ejecutas el comando. Los argumentos explícitos prevalecen:
+`build()` devuelve una lista de rutas `Path`. Puedes fijar los valores habituales en `evidoc.toml`; los argumentos del comando o de Python tienen prioridad:
 
 ```toml
 metadata_dir = "output/evidoc/metadata"
 output_dir = "output/evidoc/reports"
-application = "VisualTime"
-project = "Espartaco"
-environment = "QA"
 formats = ["pdf", "docx"]
-storage = "file"  # o "base64" para imágenes embebidas en result.json
-mode = "single"
-exclude_status = ["FAIL", "SKIP"]
+storage = "file"
 ```
 
-Las capturas de página y elemento usan SeleniumLibrary. Las de escritorio usan una sesión gráfica activa. EviDoc muestra como máximo dos capturas por página, con la descripción debajo de cada imagen.
-
-## Manual y desarrollo
-
-Consulta el [Quick Start detallado](docs/primeros-pasos/evidencia-robot.md) y el [manual](docs/index.md). Para abrir la versión offline incluida en el paquete, usa `poetry run evidoc docs manual`.
+Para consultar la guía instalada sin conexión:
 
 ```bash
-poetry install --with dev,test,acceptance,docs
-poetry run pytest
-poetry run ruff check .
-poetry run ruff format --check .
-poetry run mypy evidoc tests scripts
-poetry run lint-imports
-poetry run mkdocs build
+poetry run evidoc docs manual
+poetry run evidoc docs library
 ```
+
+Consulta el [manual de usuario](docs/index.md) para las keywords, opciones de consola, rutas de salida y ejemplos de Python. Para desarrollar EviDoc en este repositorio: `poetry install --with dev,test,acceptance,docs` y `poetry run pytest`.

@@ -17,16 +17,12 @@ start
 :Evidoc abre o reutiliza run_id\ny crea contexto de prueba;
 :Registrar pasos, logs\ny artefactos;
 if (Se capturan evidencias?) then (si)
-  :Guardar screenshots\ny adjuntos en artifacts/;
+  :Guardar capturas en artifacts/\ny registrar rutas de archivos externos;
 endif
 :Construir resultado estructurado\n(schema_version, test_case,\nsteps, artifacts);
 :Persistir JSON en disco\nen run-<id>/test-<id>/;
 :Leer resultados desde source_dir;
-if (mode = single?) then (si)
-  :Generar un reporte por prueba;
-else (no)
-  :Consolidar corrida\ny generar un solo reporte;
-endif
+:Generar un reporte por caso de prueba;
 :Emitir salida final\nPDF o DOCX;
 stop
 

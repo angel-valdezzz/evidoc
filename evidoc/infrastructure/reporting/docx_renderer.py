@@ -33,25 +33,11 @@ class DocxReportRenderer(ReportRenderer):
         self._build(output, source_dir, [result])
         return output
 
-    def render_run(
-        self,
-        source_dir: Path,
-        output_dir: Path,
-        results: list[Run],
-        sources: dict[str, Path] | None = None,
-    ) -> Path:
-        run_ids = {result.run_id for result in results}
-        run_id = results[0].run_id if len(run_ids) == 1 else "combined"
-        output = output_dir / f"run-{run_id}.docx"
-        self._build(output, source_dir, results, sources)
-        return output
-
     def _build(
         self,
         output: Path,
         source_dir: Path,
         results: list[Run],
-        sources: dict[str, Path] | None = None,
     ) -> None:
         document = Document()
         section = document.sections[0]
@@ -126,9 +112,7 @@ class DocxReportRenderer(ReportRenderer):
                         caption.paragraph_format.keep_with_next = True
                         caption.paragraph_format.page_break_before = next_picture_break
                         next_picture_break = False
-                    data = image_bytes(
-                        (sources or {}).get(result.test_id, source_dir), result, artifact
-                    )
+                    data = image_bytes(source_dir, result, artifact)
                     if data:
                         paragraph = document.add_paragraph()
                         paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER

@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, TypedDict
 from uuid import uuid4
 
+from evidoc.application.defect_overrides import apply_defects
 from evidoc.application.in_memory_warning_sink import InMemoryWarningSink
 from evidoc.application.merge_results_use_case import MergeResultsUseCase
 from evidoc.application.upload_manifest_use_case import external_files, write_upload_manifest
@@ -16,7 +17,6 @@ from evidoc.domain import run_from_dict
 from evidoc.domain.artifact import Artifact
 from evidoc.domain.artifact_type import ArtifactType
 from evidoc.domain.evidoc_config import EvidocConfig
-from evidoc.domain.generate_mode import GenerateMode
 from evidoc.domain.report_format import ReportFormat
 from evidoc.domain.status import Status
 from evidoc.infrastructure.bootstrap import build_generate_use_case
@@ -75,7 +75,6 @@ class EvidocAPI:
         self._project = project
         self._environment = environment
         self._brand = brand
-        self._defect: str | None = None
         self._run_id: str | None = None
         self._current_test_name: str | None = None
         self._current_test_full_name: str | None = None
@@ -107,7 +106,6 @@ class EvidocAPI:
             self._current_test_full_name = full_name
             self._steps = []
             self._artifacts = []
-            self._defect = None
             if self._storage == "file":
                 self._artifacts_dir().mkdir(parents=True, exist_ok=True)
             return self._current_test_id
@@ -140,7 +138,7 @@ class EvidocAPI:
                     "project": self._project,
                     "environment": self._environment,
                     "brand": self._brand,
-                    "defect": self._defect,
+                    "defect": None,
                     "tags": [],
                 },
                 "steps": [
@@ -212,12 +210,6 @@ class EvidocAPI:
 
     def log_error(self, message: str) -> None:
         self._log_message(message, Status.FAIL)
-
-    def set_defect(self, defect: str) -> None:
-        if self._current_test_id is None:
-            self._warn("No active test context for defect.")
-            return
-        self._defect = defect or None
 
     def capture_screenshot(
         self,
@@ -305,22 +297,6 @@ class EvidocAPI:
             return None
 
     def attach_file(self, path: str | Path, description: str | None = None) -> str | None:
-        try:
-            source_path = Path(path)
-            if not source_path.exists():
-                self._warn(f"Artifact '{source_path}' does not exist.")
-                return None
-            return self._register_artifact(
-                source_path=source_path,
-                artifact_type=ArtifactType.FILE,
-                title=source_path.name,
-                description=description,
-            )
-        except Exception as exc:  # pragma: no cover
-            self._warn(f"Unable to attach file '{path}': {exc}")
-            return None
-
-    def reference_file(self, path: str | Path, description: str | None = None) -> str | None:
         """Record an existing file for the upload manifest without copying it."""
         if self._current_test_id is None:
             self._warn(f"No active test context for file '{path}'.")
@@ -490,10 +466,6 @@ def log_error(message: str) -> None:
     get_current_api().log_error(message)
 
 
-def set_defect(defect: str) -> None:
-    get_current_api().set_defect(defect)
-
-
 def capture_screenshot(
     driver: Any,
     element: Any | None = None,
@@ -507,14 +479,6 @@ def capture_screenshot(
 
 def attach_file(path: str | Path, description: str | None = None) -> str | None:
     return get_current_api().attach_file(path, description)
-
-
-def attach_artifact(path: str | Path, description: str | None = None) -> str | None:
-    return attach_file(path, description)
-
-
-def reference_file(path: str | Path, description: str | None = None) -> str | None:
-    return get_current_api().reference_file(path, description)
 
 
 def capture_image(
@@ -540,9 +504,9 @@ def build(
     input_dir: str | Path | None = None,
     output_dir: str | Path | None = None,
     formats: tuple[str, ...] | list[str] | None = None,
-    mode: str | None = None,
     config_path: str | Path | None = None,
     exclude_status: str | list[str] | tuple[str, ...] | None = None,
+    defects: Sequence[str] | None = None,
 ) -> list[Path]:
     """Generate reports from persisted metadata in the current Python process."""
     settings = SchemaValidatedConfigRepository(config_schema_path()).load(
@@ -556,13 +520,12 @@ def build(
     )
     destination = output_dir or settings.get("output_dir") or "output/evidoc/reports"
     selected_formats = formats or settings.get("formats") or [settings.get("format", "pdf")]
-    selected_mode = mode or settings.get("mode") or "single"
     excluded = exclude_status if exclude_status is not None else settings.get("exclude_status", [])
     if isinstance(excluded, str):
         excluded = excluded.split(",")
     excluded_statuses = {Status(str(value).strip().upper()) for value in excluded}
     _, generate = build_generate_use_case()
-    selected = generate.select(Path(source), excluded_statuses)
+    selected = apply_defects(generate.select(Path(source), excluded_statuses), defects or ())
     external_files(selected)
     reports = [
         path
@@ -572,15 +535,12 @@ def build(
                 source_dir=Path(source),
                 output_dir=Path(destination),
                 format=ReportFormat(fmt.lower()),
-                mode=GenerateMode(selected_mode.lower()),
             ),
             selected,
         )
     ]
     if Path(source).exists():
-        write_upload_manifest(
-            Path(destination), selected, reports, GenerateMode(selected_mode.lower())
-        )
+        write_upload_manifest(Path(destination), selected, reports)
     return reports
 
 

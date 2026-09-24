@@ -1,33 +1,21 @@
-# Instalacion
+# Instalación
 
-## Requisitos
+Necesitas Python 3.11 o posterior compatible con el proyecto de pruebas y Poetry. Coloca el wheel entregado en la carpeta `assets/` de ese proyecto. Ajusta el nombre del archivo a la versión que tengas:
 
-- Python 3.14 disponible en tu entorno
-- Poetry 2.x
-- Un directorio de trabajo con permisos de escritura para `results/` y `reports/`
+```bash
+poetry add ./assets/evidoc-0.1.0-py3-none-any.whl
+poetry run evidoc --help
+```
 
-## Preparar el entorno
+Para capturas de página o de un elemento instala `robotframework-seleniumlibrary` en el mismo proyecto:
 
-=== "Poetry"
+```bash
+poetry add robotframework-seleniumlibrary
+```
 
-    ```bash
-    poetry env use python
-    poetry install --with test,acceptance,docs
-    ```
+Las capturas de escritorio necesitan una sesión gráfica activa. Usa `poetry run robot` y `poetry run evidoc` desde el mismo entorno. EviDoc incluye el manual offline y la referencia de keywords:
 
-=== "Validacion"
-
-    ```bash
-    poetry run evidoc --help
-    poetry run mkdocs build
-    ```
-
-## Que queda instalado
-
-- La CLI `evidoc`
-- La interfaz TUI
-- La API Python del paquete
-- Las dependencias para generar el sitio documental local
-
-!!! note "Sobre el interprete"
-    Asegurate de que `python` resuelva al interprete esperado por tu equipo o por el entorno local del proyecto antes de ejecutar `poetry env use python`.
+```bash
+poetry run evidoc docs manual
+poetry run evidoc docs library
+```

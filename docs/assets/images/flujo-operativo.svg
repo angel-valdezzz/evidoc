@@ -38,14 +38,14 @@
 
   <rect x="250" y="426" width="500" height="82" class="step"/>
   <text x="500" y="461" class="step-text">Se registran pasos, logs</text>
-  <text x="500" y="489" class="step-text">y adjuntos durante la ejecucion</text>
+  <text x="500" y="489" class="step-text">y rutas de archivos externos</text>
 
   <polygon points="500,558 650,648 500,738 350,648" class="decision"/>
   <text x="500" y="640" class="decision-text">Hay evidencias</text>
   <text x="500" y="667" class="decision-text">para almacenar?</text>
 
   <rect x="250" y="790" width="500" height="82" class="step"/>
-  <text x="500" y="825" class="step-text">Screenshots y archivos</text>
+  <text x="500" y="825" class="step-text">Capturas de pantalla</text>
   <text x="500" y="853" class="step-text">se guardan en artifacts/</text>
 
   <rect x="250" y="918" width="500" height="82" class="step"/>

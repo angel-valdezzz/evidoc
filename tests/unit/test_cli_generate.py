@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 from evidoc.application.services import GenerateReportUseCase
-from evidoc.domain.enums import ArtifactType, GenerateMode, ReportFormat, Status
+from evidoc.domain.enums import ArtifactType, ReportFormat, Status
 from evidoc.domain.models import (
     ArtifactRef,
     LogEntry,
@@ -138,20 +138,18 @@ def pdf_page_count(path: Path) -> int:
     return len(re.findall(rb"/Type\s*/Page\b", path.read_bytes()))
 
 
-def test_cli_generate_single_creates_one_pdf_per_test(tmp_path: Path) -> None:
+def test_cli_build_creates_one_pdf_per_test(tmp_path: Path) -> None:
     persist_result(tmp_path / "results", build_result(run_id="run_cli", test_id="case_1"))
     persist_result(tmp_path / "results", build_result(run_id="run_cli", test_id="case_2"))
 
     result = RUNNER.invoke(
         app,
         [
-            "generate",
-            "--source_dir",
+            "build",
+            "--input-dir",
             str(tmp_path / "results"),
-            "--output_dir",
+            "--output-dir",
             str(tmp_path / "reports"),
-            "--mode",
-            "single",
         ],
     )
 
@@ -160,43 +158,39 @@ def test_cli_generate_single_creates_one_pdf_per_test(tmp_path: Path) -> None:
     assert len(outputs) == 2
 
 
-def test_cli_generate_run_creates_single_combined_pdf(tmp_path: Path) -> None:
+def test_cli_build_names_reports_after_test_cases(tmp_path: Path) -> None:
     persist_result(tmp_path / "results", build_result(run_id="run_cli", test_id="case_1"))
     persist_result(tmp_path / "results", build_result(run_id="run_cli", test_id="case_2"))
 
     result = RUNNER.invoke(
         app,
         [
-            "generate",
-            "--source_dir",
+            "build",
+            "--input-dir",
             str(tmp_path / "results"),
-            "--output_dir",
+            "--output-dir",
             str(tmp_path / "reports"),
-            "--mode",
-            "run",
         ],
     )
 
     assert result.exit_code == 0, result.stdout
     outputs = sorted((tmp_path / "reports").glob("*.pdf"))
-    assert len(outputs) == 1
-    assert outputs[0].name == "run-run_cli.pdf"
+    assert len(outputs) == 2
+    assert [path.name for path in outputs] == ["Test_case_1.pdf", "Test_case_2.pdf"]
 
 
-def test_cli_generate_single_creates_docx_when_requested(tmp_path: Path) -> None:
+def test_cli_build_creates_docx_when_requested(tmp_path: Path) -> None:
     persist_result(tmp_path / "results", build_result(run_id="run_cli_docx", test_id="case_1"))
 
     result = RUNNER.invoke(
         app,
         [
-            "generate",
-            "--source_dir",
+            "build",
+            "--input-dir",
             str(tmp_path / "results"),
-            "--output_dir",
+            "--output-dir",
             str(tmp_path / "reports"),
-            "--mode",
-            "single",
-            "--format",
+            "--formats",
             "docx",
         ],
     )
@@ -216,7 +210,7 @@ def test_pdf_renderer_handles_images_missing_images_and_pagination(tmp_path: Pat
     )
     persist_result(source_dir, result)
 
-    output_path = PdfReportRenderer().render_run(source_dir, output_dir, [result])
+    output_path = PdfReportRenderer().render_single(source_dir, output_dir, result)
 
     assert output_path.exists()
     assert pdf_page_count(output_path) >= 2
@@ -237,7 +231,6 @@ def test_generate_report_use_case_still_supports_pdf_output(tmp_path: Path) -> N
                 "source_dir": tmp_path / "results",
                 "output_dir": tmp_path / "reports-pdf",
                 "format": ReportFormat.PDF,
-                "mode": GenerateMode.RUN,
             },
         )()
     )
@@ -262,7 +255,6 @@ def test_generate_report_use_case_supports_docx_output(tmp_path: Path) -> None:
                 "source_dir": tmp_path / "results",
                 "output_dir": tmp_path / "reports-docx",
                 "format": ReportFormat.DOCX,
-                "mode": GenerateMode.RUN,
             },
         )()
     )
@@ -275,7 +267,7 @@ def test_cli_docs_without_subcommand_lists_available_targets() -> None:
     result = RUNNER.invoke(app, ["docs"])
 
     assert result.exit_code == 0
-    assert "Available targets: manual, robot-library" in result.stdout
+    assert "Available targets: library, manual" in result.stdout
 
 
 def test_cli_docs_manual_opens_bundled_mkdocs_site(
@@ -314,8 +306,8 @@ def test_cli_docs_robot_library_opens_bundled_reference(
 
     monkeypatch.setattr("evidoc.interfaces.cli.main.open_documentation", fake_open_documentation)
 
-    result = RUNNER.invoke(app, ["docs", "robot-library"])
+    result = RUNNER.invoke(app, ["docs", "library"])
 
     assert result.exit_code == 0, result.stdout
-    assert opened == ["robot-library"]
+    assert opened == ["library"]
     assert str(document_path) in result.stdout

@@ -8,13 +8,12 @@ results/
     └── test-<test_id>/
         ├── result.json
         └── artifacts/
-            ├── screenshot-....png
-            └── archivo-adjunto.ext
+            └── screenshot-....png
 ```
 
 Tras `evidoc merge`, el directorio final contiene `merged-results.json`. Cada entrada apunta a un `result.json` de las carpetas originales; estas deben seguir disponibles. `build` acepta tanto este índice como la estructura normal mostrada arriba.
 
-Los archivos registrados mediante `Attach File` tienen `external: true` y `path` absoluto. EviDoc no los copia. El nombre completo `test_case.full_name` identifica el mismo caso en run/rerun y puede faltar en resultados de versiones anteriores, que se comparan por nombre.
+Los archivos registrados mediante `Attach File` tienen `external: true` y `path` absoluto. EviDoc no los copia. El nombre completo `test_case.full_name` identifica el mismo caso entre ejecuciones y puede faltar en resultados de versiones anteriores, que se comparan por nombre.
 
 ## Contrato JSON
 
@@ -28,7 +27,7 @@ Campos principales:
 - `steps`
 - `artifacts`
 
-## Ejemplo realista
+## Ejemplo de resultado
 
 ```json
 {
@@ -70,7 +69,7 @@ Campos principales:
 }
 ```
 
-## Lectura rapida del modelo
+## Cómo leer el modelo
 
 | Seccion | Significado |
 | --- | --- |

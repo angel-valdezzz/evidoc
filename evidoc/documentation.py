@@ -13,7 +13,7 @@ from pathlib import Path
 _DOCS_ROOT = ("resources", "docs")
 _BUNDLED_DOCS = {
     "manual": ("site", "index.html"),
-    "robot-library": ("robot-library.html",),
+    "library": ("robot-library.html",),
 }
 
 

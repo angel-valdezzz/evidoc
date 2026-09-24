@@ -1,13 +1,18 @@
 # Manual de EviDoc
 
-EviDoc guarda las evidencias de cada prueba y genera reportes PDF o Word. También crea un manifiesto JSON con las rutas de los archivos que otra herramienta puede subir.
+EviDoc registra evidencias de casos de prueba y crea PDF, DOCX y un manifiesto JSON con las rutas de los archivos que se desean cargar en otra herramienta.
 
-## Por dónde empezar
+## Elige lo que necesitas
 
-- [Instalación](primeros-pasos/instalacion.md): preparar Poetry y comprobar la CLI.
-- [Primera ejecución](primeros-pasos/evidencia-robot.md): capturar evidencias desde Robot Framework y crear reportes con `build`.
-- [Run y rerun](guias/cli.md): unir las ejecuciones con `merge` y generar la salida final.
-- [Archivos para cargar](guias/reportes-y-salidas.md): registrar archivos externos con `Attach File` y consultar `upload-manifest.json`.
-- [Referencia de keywords](referencia/comandos-y-keywords.md): argumentos y comandos disponibles.
+| Necesidad | Guía |
+| --- | --- |
+| Instalar el wheel en tu proyecto Poetry | [Instalación](primeros-pasos/instalacion.md) |
+| Crear el primer reporte con Robot Framework | [Inicio rápido](primeros-pasos/evidencia-robot.md) |
+| Consultar opciones de `build`, `merge` y `docs` | [Comandos de consola](guias/cli.md) |
+| Conocer las keywords y sus argumentos | [Robot Framework](guias/robot-framework.md) |
+| Construir reportes o capturar evidencia desde un script | [API Python](guias/python-api.md) |
+| Configurar rutas y formatos | [Configuración básica](primeros-pasos/configuracion-basica.md) |
+| Consultar rutas de salida, archivos y manifiesto | [Reportes y archivos](guias/reportes-y-salidas.md) |
+| Entender los `result.json` y los identificadores | [Estructura de resultados](referencia/estructura-de-resultados.md) |
 
-Para usar Python directamente, consulta la [guía de la API](guias/python-api.md). Si algo falla, revisa [solución de problemas](operacion/troubleshooting.md).
+`build` sirve para una ejecución. Si necesitas combinar los resultados de varias ejecuciones, ejecuta `merge` antes. Para resolver problemas frecuentes consulta [solución de problemas](operacion/troubleshooting.md).

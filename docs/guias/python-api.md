@@ -1,46 +1,36 @@
 # API Python
 
-Puedes ejecutar Robot y construir los reportes en el mismo proceso. No necesitas llamar al CLI desde `subprocess`:
+## Construir reportes
 
 ```python
-from robot import run
 from evidoc import build
 
-code = run("tests", outputdir="output", listener="evidoc.listener")
 reports = build(
     input_dir="output/evidoc/metadata",
     output_dir="output/evidoc/reports",
     formats=["pdf", "docx"],
+    exclude_status=["FAIL", "SKIP"],
+    defects=["TC036=BUG-123"],
 )
-print(code, reports)
 ```
 
-`build()` devuelve rutas `Path` a los PDF/DOCX. También crea `upload-manifest.json` en `output_dir`. Para no crear reportes de ciertos estados, pasa `exclude_status="FAIL"` o `exclude_status=["FAIL", "SKIP"]`. El mismo filtro determina qué casos aparecen en el manifiesto.
+`build()` devuelve una lista de rutas `Path` y crea `upload-manifest.json` en `output_dir`. `exclude_status` acepta un estado (`"FAIL"`) o una lista; el filtro afecta tanto a los documentos como al manifiesto. `defects` acepta claves repetidas con las mismas reglas que `--defect`: sin nombre solo si queda un caso seleccionado; con varios casos, `Nombre del caso=BUG-123`.
 
-## Run y rerun
-
-Cuando hayas ejecutado dos tandas, fusiona su metadata **antes** de construir los reportes:
+## Combinar resultados (opcional)
 
 ```python
 from evidoc import build, merge
 
 index = merge(
-    ["output/run/evidoc/metadata", "output/rerun/evidoc/metadata"],
-    "output/final/evidoc/metadata",
+    ["output/primera/metadata", "output/segunda/metadata"],
+    "output/final/metadata",
 )
-reports = build(
-    input_dir=index.parent,
-    output_dir="output/final/evidoc/reports",
-    formats=["pdf", "docx"],
-    exclude_status=["FAIL", "SKIP"],
-)
+reports = build(input_dir=index.parent, output_dir="output/final/reports")
 ```
 
-`merge()` devuelve la ruta de `merged-results.json`. Si el mismo caso se ejecutó dos veces, conserva el intento completo de la última carpeta. Los archivos originales permanecen en sus directorios; no se copian durante la fusión. Con una sola ejecución, llama directamente a `build()`.
+`merge()` devuelve la ruta de `merged-results.json`. Selecciona el último resultado completo para cada caso y mantiene referencias a los archivos de las ejecuciones originales. Con una ejecución, usa `build()` directamente.
 
-## Capturas y archivos desde Python
-
-La API de captura acepta bytes PNG sin depender de Selenium:
+## Captura desde Python
 
 ```python
 from evidoc.api import EvidocAPI
@@ -48,8 +38,8 @@ from evidoc.api import EvidocAPI
 api = EvidocAPI(root_dir="output/evidoc/metadata")
 api.start_test("TC036", full_name="Solicitud.TC036")
 api.capture_image(png_bytes, title="Solicitud registrada", description="Folio visible")
-api.reference_file("output/descargas/caratula.pdf", "Carátula de la póliza")
+api.attach_file("output/descargas/caratula.pdf", "Carátula de la póliza")
 api.end_test("PASS", 12.5)
 ```
 
-`reference_file` guarda la ruta absoluta para el manifiesto sin copiar el archivo. `attach_file` y `attach_artifact` conservan la API previa que copia el archivo a metadata. `start_test(full_name=...)` permite identificar el mismo caso entre ejecuciones; en Robot el listener proporciona ese dato automáticamente.
+`capture_image` recibe bytes PNG. `attach_file` registra la ruta absoluta de un archivo existente para el manifiesto, sin copiarlo. `full_name` permite identificar el mismo caso entre ejecuciones; el listener de Robot Framework lo obtiene automáticamente. Los defectos se proporcionan después, al llamar a `build()`.

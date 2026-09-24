@@ -6,9 +6,6 @@ import typer
 
 from evidoc import build, merge
 from evidoc.documentation import available_documents, open_documentation
-from evidoc.domain.generate_mode import GenerateMode
-from evidoc.domain.report_format import ReportFormat
-from evidoc.infrastructure.bootstrap import build_generate_use_case
 from evidoc.interfaces.tui.app import EvidocTui
 
 app = typer.Typer(help="Evidoc reporting CLI.")
@@ -16,69 +13,31 @@ docs_app = typer.Typer(help="Open bundled Evidoc documentation.")
 app.add_typer(docs_app, name="docs")
 
 
-@app.command()
-def generate(
-    source_dir: Path | None = typer.Option(
-        None,
-        "--source_dir",
-        "--source-dir",
-        help="Directory containing stored results.",
-    ),
-    output_dir: Path | None = typer.Option(
-        None,
-        "--output_dir",
-        "--output-dir",
-        help="Directory for generated reports.",
-    ),
-    format: ReportFormat = typer.Option(
-        ReportFormat.PDF,
-        "--format",
-        case_sensitive=False,
-        help="Report output format.",
-    ),
-    mode: GenerateMode = typer.Option(
-        GenerateMode.RUN,
-        "--mode",
-        case_sensitive=False,
-        help="Generation mode.",
-    ),
-) -> None:
-    load_config, generate_reports = build_generate_use_case()
-    merged = load_config.execute(
-        overrides={
-            "source_dir": source_dir,
-            "output_dir": output_dir,
-            "format": format.value,
-            "mode": mode.value,
-        },
-    )
-    outputs = generate_reports.execute(merged)
-    if not outputs:
-        typer.echo("No results found.")
-        raise typer.Exit(code=0)
-    for report in outputs:
-        typer.echo(str(report))
-
-
 @app.command("build")
 def build_command(
     input_dir: Path | None = typer.Option(None, "--input-dir"),
     output_dir: Path | None = typer.Option(None, "--output-dir"),
     formats: str | None = typer.Option(None, "--formats", help="Comma-separated: pdf,docx"),
-    mode: GenerateMode | None = typer.Option(None, "--mode", case_sensitive=False),
     config: Path | None = typer.Option(None, "--config"),
     exclude_status: str | None = typer.Option(
         None, "--exclude-status", help="Comma-separated statuses, such as FAIL,SKIP"
     ),
+    defects: list[str] | None = typer.Option(
+        None, "--defect", help="Repeat BUG-123 for one case or 'Test name=BUG-123' for many"
+    ),
 ) -> None:
-    for report in build(
-        input_dir=input_dir,
-        output_dir=output_dir,
-        formats=[item.strip() for item in formats.split(",")] if formats else None,
-        mode=mode.value if mode else None,
-        config_path=config,
-        exclude_status=exclude_status,
-    ):
+    try:
+        reports = build(
+            input_dir=input_dir,
+            output_dir=output_dir,
+            formats=[item.strip() for item in formats.split(",")] if formats else None,
+            config_path=config,
+            exclude_status=exclude_status,
+            defects=defects,
+        )
+    except (ValueError, FileNotFoundError) as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    for report in reports:
         typer.echo(str(report))
 
 
@@ -95,11 +54,11 @@ def tui() -> None:
     EvidocTui().run()
 
 
-@docs_app.command("robot-library")
+@docs_app.command("library")
 def docs_robot_library() -> None:
     """Open the bundled Robot Framework keyword reference generated with libdoc."""
 
-    document_path = open_documentation("robot-library")
+    document_path = open_documentation("library")
     typer.echo(f"Opened bundled documentation: {document_path}")
 
 

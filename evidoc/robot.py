@@ -204,26 +204,10 @@ class RobotLibrary:
             raise ValueError("Capture Screenshot requires a driver or an explicit library name.")
         return api.capture_screenshot(target, element=element, title=title, description=description)
 
-    @keyword("Attach Artifact")
-    def attach_artifact(self, path: str | Path, description: str | None = None) -> str | None:
-        """<p>Adjunta un archivo local existente a la prueba activa.</p>
-
-        <h2>Argumentos</h2>
-        <ul>
-          <li><b>path</b>: ruta absoluta o relativa al directorio de ejecucion.</li>
-          <li><b>description</b>: contexto opcional que se mostrara en el reporte.</li>
-        </ul>
-
-        <h2>Retorno</h2>
-        <p>Retorna el identificador del artefacto almacenado cuando el archivo se
-        acepta correctamente.</p>
-        """
-        return api.attach_artifact(path, description)
-
     @keyword("Attach File")
     def attach_file(self, path: str | Path, description: str | None = None) -> str | None:
         """Register the final path of a file for the upload manifest without copying it."""
-        return api.reference_file(path, description)
+        return api.attach_file(path, description)
 
     @keyword("Log Info")
     def log_info(self, message: str) -> None:
@@ -239,11 +223,6 @@ class RobotLibrary:
     def log_error(self, message: str) -> None:
         """<p>Agrega un mensaje de error al paso actual.</p>"""
         api.log_error(message)
-
-    @keyword("Set Defect")
-    def set_defect(self, defect: str) -> None:
-        """Set the defect reference for the current test's summary row."""
-        api.set_defect(defect)
 
 
 _LIBRARY = RobotLibrary()
@@ -274,11 +253,6 @@ def capture_element_evidence(
             locator, title, status, orientation, include_page, description
         ),
     )
-
-
-@keyword("Set Defect")
-def set_defect(defect: str) -> None:
-    _LIBRARY.set_defect(defect)
 
 
 @keyword("Capture Desktop Evidence")
@@ -316,11 +290,6 @@ def capture_screenshot(
             library=library,
         ),
     )
-
-
-@keyword("Attach Artifact")
-def attach_artifact(path: str | Path, description: str | None = None) -> str | None:
-    return cast(str | None, _LIBRARY.attach_artifact(path, description))
 
 
 @keyword("Attach File")

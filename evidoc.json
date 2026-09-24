@@ -2,7 +2,6 @@
   "source_dir": "./results",
   "output_dir": "./reports",
   "format": "pdf",
-  "mode": "run",
   "application": "Example Application",
   "requirement": "REQ-001"
 }

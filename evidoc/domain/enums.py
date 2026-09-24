@@ -1,6 +1,5 @@
 from evidoc.domain.artifact_type import ArtifactType
-from evidoc.domain.generate_mode import GenerateMode
 from evidoc.domain.report_format import ReportFormat
 from evidoc.domain.status import Status
 
-__all__ = ["ArtifactType", "GenerateMode", "ReportFormat", "Status"]
+__all__ = ["ArtifactType", "ReportFormat", "Status"]

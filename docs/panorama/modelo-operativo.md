@@ -1,49 +1,18 @@
 # Modelo operativo
 
-## Vista teorica
+EviDoc registra evidencias mientras se ejecuta cada prueba y construye los documentos una vez guardados los resultados:
 
-El flujo base siempre es el mismo:
+1. El listener de Robot Framework o la API Python inicia el caso y registra su nombre.
+2. Las keywords o la API guardan pasos, mensajes, capturas y rutas de otros archivos.
+3. Al terminar el caso se escribe `result.json` con su estado y su evidencia.
+4. `build` lee los resultados seleccionados y crea un PDF o DOCX por caso, además de `upload-manifest.json`.
 
-```text
-Prueba -> Evidoc captura contexto -> Se escriben resultados en disco -> Evidoc genera reporte
-```
+Cada resultado contiene `run_id` y `test_id` para identificar la ejecución y sus archivos internos. Los nombres de PDF y DOCX derivan solamente del nombre del caso. Los archivos descargados registrados con `Attach File` permanecen en su ruta original.
 
-La ventaja de este modelo es que desacopla la ejecucion del formato final. Puedes cambiar el framework, el tipo de evidencia o el consumidor del reporte sin romper el contrato de datos.
+Si tienes varias ejecuciones del mismo conjunto de pruebas, puedes usar `merge` para seleccionar el último resultado completo de cada caso antes de `build`. `merge` no es necesario cuando trabajas con una sola ejecución.
 
-## Vista tecnica
-
-### 1. Inicio de prueba
-
-Cuando una prueba inicia, Evidoc crea o reutiliza un `run_id` y abre un contexto para un `test_id`.
-
-### 2. Registro de evidencia
-
-Durante la ejecucion se agregan:
-
-- pasos con estado,
-- logs con timestamp,
-- screenshots,
-- archivos adjuntos.
-
-### 3. Cierre de prueba
-
-Al finalizar, se construye un JSON con `schema_version`, `test_case`, `steps` y `artifacts`.
-
-### 4. Generacion de reportes
-
-Luego la CLI o la TUI leen el directorio de resultados y generan:
-
-- un solo reporte por corrida (`mode=run`),
-- o un reporte por prueba (`mode=single`).
-
-## Decisiones que afectan el uso
-
-| Decision | Impacto |
+| Opción | Efecto |
 | --- | --- |
-| `mode=run` | Consolida varias pruebas en un mismo reporte |
-| `mode=single` | Facilita compartir evidencia aislada por caso |
-| `format=pdf` | Mejor para distribucion y lectura fija |
-| `format=docx` | Mejor para edicion o anexos posteriores |
-
-??? tip "Regla practica"
-    Si el reporte se enviara tal cual a negocio, empieza con `pdf`. Si otro equipo va a editar el documento despues, usa `docx`.
+| `--formats pdf,docx` | Selecciona los documentos que se producen por caso. |
+| `--exclude-status FAIL,SKIP` | Deja esos casos fuera de los documentos y del manifiesto. |
+| `--defect 'Caso=BUG-123'` | Muestra una clave de defecto para el caso indicado en los documentos, sin modificar `result.json`. |

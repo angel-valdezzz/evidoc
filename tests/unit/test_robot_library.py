@@ -40,7 +40,7 @@ def test_log_keywords_delegate_to_api(monkeypatch: pytest.MonkeyPatch) -> None:
     ]
 
 
-def test_attach_artifact_keyword_delegates_to_api(
+def test_attach_file_keyword_delegates_to_api(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -49,13 +49,13 @@ def test_attach_artifact_keyword_delegates_to_api(
     artifact = tmp_path / "artifact.txt"
     artifact.write_text("hello", encoding="utf-8")
 
-    def fake_attach_artifact(path: str | Path, description: str | None = None) -> str:
+    def fake_attach_file(path: str | Path, description: str | None = None) -> str:
         calls.append((Path(path), description))
         return "artifact-id"
 
-    monkeypatch.setattr("evidoc.robot.api.attach_artifact", fake_attach_artifact)
+    monkeypatch.setattr("evidoc.robot.api.attach_file", fake_attach_file)
 
-    assert library.attach_artifact(artifact, "details") == "artifact-id"
+    assert library.attach_file(artifact, "details") == "artifact-id"
     assert calls == [(artifact, "details")]
 
 
