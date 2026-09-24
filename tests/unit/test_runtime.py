@@ -12,7 +12,6 @@ from evidoc.application.services import (
     LoadConfigUseCase,
 )
 from evidoc.domain.enums import GenerateMode, ReportFormat, Status
-from evidoc.infrastructure.bootstrap import project_root
 from evidoc.infrastructure.config.repository import SchemaValidatedConfigRepository
 from evidoc.infrastructure.filesystem.repository import (
     FilesystemArtifactStorage,
@@ -21,6 +20,7 @@ from evidoc.infrastructure.filesystem.repository import (
 from evidoc.infrastructure.reporting.docx_renderer import DocxReportRenderer
 from evidoc.infrastructure.reporting.pdf_renderer import PdfReportRenderer
 from evidoc.listener import Listener
+from evidoc.schema_paths import config_schema_path, result_schema_path
 from jsonschema import validate
 
 pytestmark = pytest.mark.unit
@@ -28,7 +28,7 @@ pytestmark = pytest.mark.unit
 
 def build_runtime(tmp_path: Path) -> tuple[ExecutionService, InMemoryWarningSink]:
     sink = InMemoryWarningSink()
-    repo = FilesystemResultRepository(project_root() / "schemas" / "result.schema.json")
+    repo = FilesystemResultRepository(result_schema_path())
     runtime = ExecutionService(
         result_repository=repo,
         artifact_storage=FilesystemArtifactStorage(),
@@ -36,6 +36,17 @@ def build_runtime(tmp_path: Path) -> tuple[ExecutionService, InMemoryWarningSink
         default_root_dir=tmp_path / "results",
     )
     return runtime, sink
+
+
+def test_schemas_are_resolved_inside_the_installed_package(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    package_dir = Path(evidoc_api.__file__).resolve().parent
+    for path in (config_schema_path(), result_schema_path()):
+        assert path.is_relative_to(package_dir)
+        assert path.is_file()
+    assert SchemaValidatedConfigRepository(config_schema_path()).load() == {}
 
 
 def test_run_id_is_reused(tmp_path: Path) -> None:
@@ -57,9 +68,7 @@ def test_unique_test_ids_and_json_contract(tmp_path: Path) -> None:
     run_id = (tmp_path / "results" / ".run_id").read_text(encoding="utf-8").strip()
     result_path = tmp_path / "results" / f"run-{run_id}" / f"test-{first}" / "result.json"
     payload = json.loads(result_path.read_text(encoding="utf-8"))
-    schema = json.loads(
-        (project_root() / "schemas" / "result.schema.json").read_text(encoding="utf-8")
-    )
+    schema = json.loads(result_schema_path().read_text(encoding="utf-8"))
     validate(payload, schema)
     assert "artifact_ids" in payload["steps"][0]
     assert "artifacts" not in payload["steps"][0]
@@ -78,7 +87,7 @@ def test_config_precedence(tmp_path: Path) -> None:
     config_path.write_text(
         'source_dir = "./custom-results"\nformat = "docx"\nmode = "single"\n', encoding="utf-8"
     )
-    repo = SchemaValidatedConfigRepository(project_root() / "schemas" / "config.schema.json")
+    repo = SchemaValidatedConfigRepository(config_schema_path())
     config = LoadConfigUseCase(repo).execute(config_path, overrides={"format": "pdf"})
     assert config.source_dir == Path("./custom-results")
     assert config.format == ReportFormat.PDF
@@ -90,7 +99,7 @@ def test_generate_pdf_and_docx_reports(tmp_path: Path) -> None:
     runtime.start_test("Render me")
     runtime.log_step("Step", Status.PASS)
     runtime.finish_test(Status.PASS, duration=0.2)
-    repo = FilesystemResultRepository(project_root() / "schemas" / "result.schema.json")
+    repo = FilesystemResultRepository(result_schema_path())
     pdf_outputs = GenerateReportUseCase(repo, {ReportFormat.PDF: PdfReportRenderer()}).execute(
         type(
             "Cfg",

@@ -12,6 +12,8 @@ poetry run python -c "import evidoc.robot, evidoc.listener; print(evidoc.robot._
 
 Si ya clonaste la rama junto al proyecto de pruebas, puedes usar `poetry add --editable ../evidoc` en vez de la dependencia Git. La ruta que imprime el diagnóstico debe apuntar a la versión recién instalada; `evidoc.toml` configura la ejecución, pero no instala la biblioteca. Usa siempre `poetry run robot` y `poetry run evidoc` para que ambos comandos compartan el entorno. En VS Code, selecciona también el intérprete de ese entorno; consúltalo con `poetry env info --path`.
 
+Si al importar el listener aparece `FileNotFoundError` buscando `site-packages/schemas/config.schema.json` o `result.schema.json`, tienes instalada una revisión anterior de la rama. Actualiza la dependencia Git desde el proyecto de pruebas con `poetry update evidoc`. Después confirma que la importación funciona con `poetry run python -c "import evidoc.listener; from evidoc.schema_paths import config_schema_path, result_schema_path; print(config_schema_path().is_file(), result_schema_path().is_file())"`: debe imprimir `True True`.
+
 ```robotframework
 *** Settings ***
 Library    SeleniumLibrary

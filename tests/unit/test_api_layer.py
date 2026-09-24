@@ -19,14 +19,14 @@ from evidoc.api import (
 )
 from evidoc.application.services import InMemoryWarningSink
 from evidoc.domain.enums import Status
-from evidoc.infrastructure.bootstrap import project_root
+from evidoc.schema_paths import result_schema_path
 from jsonschema import validate
 
 pytestmark = pytest.mark.unit
 
 
 def load_schema() -> dict[str, Any]:
-    schema_path = project_root() / "schemas" / "result.schema.json"
+    schema_path = result_schema_path()
     return cast(dict[str, Any], json.loads(schema_path.read_text(encoding="utf-8")))
 
 

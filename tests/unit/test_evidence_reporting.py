@@ -8,11 +8,11 @@ import pytest
 from docx import Document
 from evidoc import build
 from evidoc.api import EvidocAPI
-from evidoc.infrastructure.bootstrap import project_root
 from evidoc.infrastructure.filesystem.filesystem_result_repository import FilesystemResultRepository
 from evidoc.infrastructure.reporting.helpers import fitted_size
 from evidoc.interfaces.cli.main import app
 from evidoc.listener import Listener
+from evidoc.schema_paths import result_schema_path
 from PIL import Image
 from robot.run import run
 from typer.testing import CliRunner
@@ -39,9 +39,7 @@ def test_storage_and_both_renderers(tmp_path: Path, storage: str) -> None:
     for kind in ("page", "element", "desktop"):
         assert api.capture_image(png(), title=kind, capture=kind, orientation="horizontal")
     api.end_test("PASS", 1.5)
-    results = FilesystemResultRepository(
-        project_root() / "schemas" / "result.schema.json"
-    ).load_test_results(source)
+    results = FilesystemResultRepository(result_schema_path()).load_test_results(source)
     assert len(results) == 1
     assert [step.title for step in results[0].steps] == ["page", "element", "desktop"]
     result = results[0]
@@ -124,9 +122,9 @@ Capture all
         )
         == 0
     )
-    results = FilesystemResultRepository(
-        project_root() / "schemas" / "result.schema.json"
-    ).load_test_results(output / "evidoc" / "metadata")
+    results = FilesystemResultRepository(result_schema_path()).load_test_results(
+        output / "evidoc" / "metadata"
+    )
     assert len(results) == 1
     assert [a.capture for a in results[0].artifacts] == ["page", "page", "element", "desktop"]
     assert results[0].artifacts[2].orientation == "horizontal"
@@ -154,9 +152,9 @@ def test_resource_imports_evidoc_keywords_with_listener(tmp_path: Path) -> None:
         )
         == 0
     )
-    results = FilesystemResultRepository(
-        project_root() / "schemas" / "result.schema.json"
-    ).load_test_results(output / "evidoc" / "metadata")
+    results = FilesystemResultRepository(result_schema_path()).load_test_results(
+        output / "evidoc" / "metadata"
+    )
     assert len(results) == 1
     assert results[0].steps[0].title == "Inicio del flujo"
 
@@ -193,9 +191,9 @@ def test_toml_config_applies_to_listener_and_build(
         )
         == 0
     )
-    results = FilesystemResultRepository(
-        project_root() / "schemas" / "result.schema.json"
-    ).load_test_results(tmp_path / "metadata")
+    results = FilesystemResultRepository(result_schema_path()).load_test_results(
+        tmp_path / "metadata"
+    )
     assert len(results) == 1
     assert results[0].test_case.application == "Salud"
     assert results[0].test_case.project == "Espartaco"
@@ -231,9 +229,7 @@ def test_robot_listener_storage_configuration(
         )
         == 0
     )
-    results = FilesystemResultRepository(
-        project_root() / "schemas" / "result.schema.json"
-    ).load_test_results(metadata)
+    results = FilesystemResultRepository(result_schema_path()).load_test_results(metadata)
     assert len(results) == 1
     assert results[0].artifacts[0].data
     assert not list(metadata.rglob("*.png"))
@@ -252,9 +248,9 @@ def test_missing_capture_adapter_warns_without_failing_robot(tmp_path: Path) -> 
         )
         == 0
     )
-    results = FilesystemResultRepository(
-        project_root() / "schemas" / "result.schema.json"
-    ).load_test_results(output / "evidoc" / "metadata")
+    results = FilesystemResultRepository(result_schema_path()).load_test_results(
+        output / "evidoc" / "metadata"
+    )
     assert len(results) == 1
     assert not results[0].artifacts
 
@@ -270,9 +266,7 @@ def test_concurrent_writers_share_run_without_overwriting(tmp_path: Path) -> Non
 
     with ThreadPoolExecutor(max_workers=8) as pool:
         list(pool.map(worker, range(24)))
-    results = FilesystemResultRepository(
-        project_root() / "schemas" / "result.schema.json"
-    ).load_test_results(root)
+    results = FilesystemResultRepository(result_schema_path()).load_test_results(root)
     assert len(results) == 24
     assert len({r.run_id for r in results}) == 1
     assert len({r.test_id for r in results}) == 24
@@ -282,8 +276,6 @@ def test_separate_processes_share_metadata_directory(tmp_path: Path) -> None:
     root = tmp_path / "metadata"
     with ProcessPoolExecutor(max_workers=4) as pool:
         list(pool.map(write_worker, [root] * 12, range(12)))
-    results = FilesystemResultRepository(
-        project_root() / "schemas" / "result.schema.json"
-    ).load_test_results(root)
+    results = FilesystemResultRepository(result_schema_path()).load_test_results(root)
     assert len(results) == 12
     assert len({result.run_id for result in results}) == 1

@@ -17,11 +17,11 @@ from evidoc.domain.models import (
 from evidoc.domain.models import (
     TestResult as ResultModel,
 )
-from evidoc.infrastructure.bootstrap import project_root
 from evidoc.infrastructure.filesystem.repository import FilesystemResultRepository
 from evidoc.infrastructure.reporting.docx_renderer import DocxReportRenderer
 from evidoc.infrastructure.reporting.pdf_renderer import PdfReportRenderer
 from evidoc.interfaces.cli.main import app
+from evidoc.schema_paths import result_schema_path
 from PIL import Image as PilImage
 from typer.testing import CliRunner
 
@@ -118,7 +118,7 @@ def build_result(
 
 
 def persist_result(root_dir: Path, result: ResultModel) -> None:
-    repo = FilesystemResultRepository(project_root() / "schemas" / "result.schema.json")
+    repo = FilesystemResultRepository(result_schema_path())
     repo.save_test_result(root_dir, result)
     test_dir = root_dir / f"run-{result.run_id}" / f"test-{result.test_id}"
     for artifact in result.artifacts:
@@ -225,7 +225,7 @@ def test_pdf_renderer_handles_images_missing_images_and_pagination(tmp_path: Pat
 def test_generate_report_use_case_still_supports_pdf_output(tmp_path: Path) -> None:
     persist_result(tmp_path / "results", build_result(run_id="run_use_case", test_id="case_pdf"))
 
-    repo = FilesystemResultRepository(project_root() / "schemas" / "result.schema.json")
+    repo = FilesystemResultRepository(result_schema_path())
     pdf_outputs = GenerateReportUseCase(
         repo,
         {ReportFormat.PDF: PdfReportRenderer()},
@@ -250,7 +250,7 @@ def test_generate_report_use_case_supports_docx_output(tmp_path: Path) -> None:
         tmp_path / "results", build_result(run_id="run_use_case_docx", test_id="case_docx")
     )
 
-    repo = FilesystemResultRepository(project_root() / "schemas" / "result.schema.json")
+    repo = FilesystemResultRepository(result_schema_path())
     docx_outputs = GenerateReportUseCase(
         repo,
         {ReportFormat.DOCX: DocxReportRenderer()},

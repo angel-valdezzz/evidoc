@@ -16,11 +16,13 @@ from evidoc.domain.evidoc_config import EvidocConfig
 from evidoc.domain.generate_mode import GenerateMode
 from evidoc.domain.report_format import ReportFormat
 from evidoc.domain.status import Status
-from evidoc.infrastructure.bootstrap import build_generate_use_case, project_root
+from evidoc.infrastructure.bootstrap import build_generate_use_case
 from evidoc.infrastructure.capture import screenshot_bytes
 from evidoc.infrastructure.config.repository import SchemaValidatedConfigRepository
 from evidoc.infrastructure.filesystem.filesystem_artifact_storage import FilesystemArtifactStorage
 from evidoc.infrastructure.filesystem.filesystem_result_repository import FilesystemResultRepository
+from evidoc.schema_paths import config_schema_path
+from evidoc.schema_paths import result_schema_path as bundled_result_schema_path
 
 LOGGER = logging.getLogger("evidoc.api")
 
@@ -59,7 +61,7 @@ class EvidocAPI:
     ) -> None:
         if storage not in {"file", "base64"}:
             raise ValueError("storage must be 'file' or 'base64'")
-        schema_path = result_schema_path or project_root() / "schemas" / "result.schema.json"
+        schema_path = result_schema_path or bundled_result_schema_path()
         self._root_dir = Path(root_dir)
         self._result_repository = FilesystemResultRepository(schema_path)
         self._artifact_storage = FilesystemArtifactStorage()
@@ -504,9 +506,9 @@ def build(
     config_path: str | Path | None = None,
 ) -> list[Path]:
     """Generate reports from persisted metadata in the current Python process."""
-    settings = SchemaValidatedConfigRepository(
-        project_root() / "schemas" / "config.schema.json"
-    ).load(Path(config_path) if config_path else None)
+    settings = SchemaValidatedConfigRepository(config_schema_path()).load(
+        Path(config_path) if config_path else None
+    )
     source = (
         input_dir
         or settings.get("metadata_dir")

@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 from collections import Counter
 from functools import lru_cache
-from pathlib import Path
 from typing import Any, cast
 
 from jsonschema import Draft202012Validator
@@ -15,16 +14,12 @@ from evidoc.domain.run import Run
 from evidoc.domain.status import Status
 from evidoc.domain.step import Step
 from evidoc.domain.test_case import TestCase
-
-
-def _project_root() -> Path:
-    return Path(__file__).resolve().parents[2]
+from evidoc.schema_paths import result_schema_path
 
 
 @lru_cache(maxsize=1)
 def load_run_schema() -> dict[str, Any]:
-    schema_path = _project_root() / "schemas" / "result.schema.json"
-    return cast(dict[str, Any], json.loads(schema_path.read_text(encoding="utf-8")))
+    return cast(dict[str, Any], json.loads(result_schema_path().read_text(encoding="utf-8")))
 
 
 @lru_cache(maxsize=1)

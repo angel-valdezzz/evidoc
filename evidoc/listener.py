@@ -18,8 +18,8 @@ from robot.libraries.BuiltIn import BuiltIn
 
 from evidoc import api
 from evidoc.domain.enums import Status
-from evidoc.infrastructure.bootstrap import project_root
 from evidoc.infrastructure.config.repository import SchemaValidatedConfigRepository
+from evidoc.schema_paths import config_schema_path
 
 LOGGER = logging.getLogger("evidoc.listener")
 ROBOT_LISTENER_API_VERSION = 3
@@ -39,9 +39,9 @@ class Listener:
         brand: str | None = None,
         config_path: str | None = None,
     ) -> None:
-        settings = SchemaValidatedConfigRepository(
-            project_root() / "schemas" / "config.schema.json"
-        ).load(Path(config_path) if config_path else None)
+        settings = SchemaValidatedConfigRepository(config_schema_path()).load(
+            Path(config_path) if config_path else None
+        )
         selected_storage = storage or settings.get("storage", "file")
         if selected_storage not in {"file", "base64"}:
             raise ValueError("storage must be 'file' or 'base64'")

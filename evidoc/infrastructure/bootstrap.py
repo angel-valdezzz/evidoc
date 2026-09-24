@@ -12,6 +12,7 @@ from evidoc.infrastructure.filesystem.filesystem_result_repository import Filesy
 from evidoc.infrastructure.logging import LoggerWarningSink
 from evidoc.infrastructure.reporting.docx_renderer import DocxReportRenderer
 from evidoc.infrastructure.reporting.pdf_renderer import PdfReportRenderer
+from evidoc.schema_paths import config_schema_path, result_schema_path
 
 
 def project_root() -> Path:
@@ -24,9 +25,8 @@ def build_runtime(
     application: str | None = None,
     requirement: str | None = None,
 ) -> ExecutionService:
-    base = project_root()
     return ExecutionService(
-        result_repository=FilesystemResultRepository(base / "schemas" / "result.schema.json"),
+        result_repository=FilesystemResultRepository(result_schema_path()),
         artifact_storage=FilesystemArtifactStorage(),
         warning_sink=LoggerWarningSink(),
         default_root_dir=root_dir,
@@ -36,9 +36,8 @@ def build_runtime(
 
 
 def build_generate_use_case() -> tuple[LoadConfigUseCase, GenerateReportUseCase]:
-    base = project_root()
-    config_repo = SchemaValidatedConfigRepository(base / "schemas" / "config.schema.json")
-    result_repo = FilesystemResultRepository(base / "schemas" / "result.schema.json")
+    config_repo = SchemaValidatedConfigRepository(config_schema_path())
+    result_repo = FilesystemResultRepository(result_schema_path())
     renderers = {
         ReportFormat.PDF: PdfReportRenderer(),
         ReportFormat.DOCX: DocxReportRenderer(),

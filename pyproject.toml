@@ -6,6 +6,7 @@ authors = ["OpenAI Codex <codex@openai.com>"]
 readme = "README.md"
 packages = [{ include = "evidoc" }]
 include = [
+    { path = "evidoc/resources/schemas/*.json", format = ["sdist", "wheel"] },
     { path = "evidoc/resources/docs/site", format = ["sdist", "wheel"] },
     { path = "evidoc/resources/docs/robot-library.html", format = ["sdist", "wheel"] },
 ]
