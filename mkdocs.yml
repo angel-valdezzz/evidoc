@@ -1,5 +1,7 @@
-site_name: Evidoc Docs
-site_description: Manual tecnico para usuarios finales de Evidoc.
+site_name: EviDoc
+site_description: Manual de EviDoc para capturar evidencias y generar reportes.
+repo_url: https://github.com/angel-valdezzz/evidoc
+repo_name: EviDoc
 use_directory_urls: false
 
 theme:
@@ -7,25 +9,37 @@ theme:
   language: es
   favicon: assets/images/favicon.svg
   logo: assets/images/logo-mark.svg
+  icon:
+    annotation: material/plus-circle
   palette:
-    - scheme: default
-      primary: teal
-      accent: amber
+    - media: "(prefers-color-scheme)"
+      scheme: default
+      primary: custom
+      accent: custom
       toggle:
-        icon: material/weather-night
-        name: Cambiar a modo oscuro
-    - scheme: slate
-      primary: teal
-      accent: amber
-      toggle:
-        icon: material/weather-sunny
+        icon: material/brightness-auto
         name: Cambiar a modo claro
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Cambiar a modo oscuro
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-4
+        name: Cambiar a preferencia del sistema
   font:
     text: IBM Plex Sans
     code: IBM Plex Mono
   features:
     - navigation.sections
     - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.top
     - navigation.path
     - navigation.indexes

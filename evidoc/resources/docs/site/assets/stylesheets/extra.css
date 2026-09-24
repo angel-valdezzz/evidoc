@@ -1,9 +1,28 @@
-:root {
-  --evidoc-surface: linear-gradient(135deg, rgba(0, 121, 107, 0.16), rgba(255, 193, 7, 0.18));
-  --evidoc-border: rgba(0, 121, 107, 0.25);
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: #00008f;
+  --md-primary-fg-color--dark: #00008f;
+  --md-primary-fg-color--light: #00008f;
+  --md-accent-fg-color: #d24723;
+  --md-accent-fg-color--dark: #d24723;
+  --md-accent-fg-color--light: #d24723;
+  --evidoc-primary-rgb: 0, 0, 143;
+  --evidoc-accent-rgb: 210, 71, 35;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #4976ba;
+  --md-primary-fg-color--dark: #4976ba;
+  --md-primary-fg-color--light: #4976ba;
+  --md-accent-fg-color: #8a7333;
+  --md-accent-fg-color--dark: #8a7333;
+  --md-accent-fg-color--light: #8a7333;
+  --evidoc-primary-rgb: 73, 118, 186;
+  --evidoc-accent-rgb: 138, 115, 51;
 }
 
 .hero {
+  --evidoc-surface: linear-gradient(135deg, rgba(var(--evidoc-primary-rgb), 0.16), rgba(var(--evidoc-accent-rgb), 0.18));
+  --evidoc-border: rgba(var(--evidoc-primary-rgb), 0.25);
   display: grid;
   grid-template-columns: 1.3fr 1fr;
   gap: 2rem;
@@ -12,8 +31,8 @@
   border: 1px solid var(--evidoc-border);
   border-radius: 1.25rem;
   background:
-    radial-gradient(circle at top right, rgba(255, 193, 7, 0.18), transparent 35%),
-    radial-gradient(circle at bottom left, rgba(0, 121, 107, 0.22), transparent 30%),
+    radial-gradient(circle at top right, rgba(var(--evidoc-accent-rgb), 0.18), transparent 35%),
+    radial-gradient(circle at bottom left, rgba(var(--evidoc-primary-rgb), 0.22), transparent 30%),
     var(--evidoc-surface);
   margin-bottom: 1.5rem;
 }
