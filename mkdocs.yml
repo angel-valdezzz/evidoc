@@ -1,8 +1,12 @@
+repo_url: https://github.com/angel-valdezzz/evidoc
+repo_name: angel-valdezzz/evidoc
 site_name: Evidoc Docs
 site_description: Manual tecnico para usuarios finales de Evidoc.
 use_directory_urls: false
 
 theme:
+  icon:
+    repo: fontawesome/brands/github
   name: material
   language: es
   favicon: assets/images/favicon.svg
